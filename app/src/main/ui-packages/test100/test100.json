@@ -1,0 +1,404 @@
+{
+  "name": "test100",
+  "version": 33,
+  "source-key": {
+    "type": "figma",
+    "file": "YHQbOTUCPIZS3adoc8C7s7",
+    "node": "5:10",
+    "version": "2176056580460576239",
+    "component-id": "e1c0db0d83113e6d1356ea272f523a61ebe3f46c"
+  },
+  "default": "test100",
+  "documentation": "imon[[[",
+  "design": {
+    "atoms": [
+      {
+        "type": "group",
+        "id": "top_level",
+        "root": "true"
+      },
+      {
+        "type": "vector",
+        "id": "background"
+      },
+      {
+        "type": "vector",
+        "id": "Rectangle 6"
+      },
+      {
+        "type": "text",
+        "id": "SAVE"
+      },
+      {
+        "type": "vector",
+        "id": "Rectangle 5"
+      },
+      {
+        "type": "group",
+        "id": "Calendar"
+      },
+      {
+        "type": "vector",
+        "id": "Icon000"
+      },
+      {
+        "type": "text",
+        "id": "EXP product"
+      },
+      {
+        "type": "text",
+        "id": "NAE product"
+      },
+      {
+        "type": "text",
+        "id": "NAME product"
+      },
+      {
+        "type": "image",
+        "id": "image 2"
+      },
+      {
+        "type": "text",
+        "id": "Upload"
+      },
+      {
+        "type": "group",
+        "id": "Icon8888"
+      },
+      {
+        "type": "vector",
+        "id": "icon"
+      }
+    ],
+    "modes": {
+      "test100": {
+        "rules": [
+          {
+            "id": "top_level",
+            "is-structured": false,
+            "children": [
+              "background",
+              "Rectangle 6",
+              "SAVE",
+              "Rectangle 5",
+              "Calendar",
+              "Icon000",
+              "EXP product",
+              "NAE product",
+              "NAME product",
+              "image 2",
+              "Upload",
+              "Icon8888",
+              "icon"
+            ],
+            "clip-content": false
+          },
+          {
+            "id": "background",
+            "border-radius": 20.0,
+            "size-constraints": {
+              "width-constraints": {
+                "sizing-mode": "proportional",
+                "value": 1.0
+              },
+              "height-constraints": {
+                "sizing-mode": "proportional",
+                "value": 1.0
+              }
+            },
+            "vector-content": "background.svg"
+          },
+          {
+            "id": "Rectangle 6",
+            "margin": {
+              "left": 298.0,
+              "top": 849.0,
+              "right": 76.0,
+              "bottom": 224.0
+            },
+            "border-radius": 12.0,
+            "size-constraints": {
+              "width-constraints": {
+                "sizing-mode": "proportional",
+                "value": 1.0
+              },
+              "height-constraints": {
+                "sizing-mode": "proportional",
+                "value": 1.0
+              }
+            },
+            "vector-content": "rectangle_6.svg"
+          },
+          {
+            "id": "SAVE",
+            "margin": {
+              "left": 323.0,
+              "top": 863.0,
+              "right": 96.0,
+              "bottom": 238.0
+            },
+            "size-constraints": {
+              "width-constraints": {
+                "sizing-mode": "proportional",
+                "value": 1.0
+              },
+              "height-constraints": {
+                "sizing-mode": "proportional",
+                "value": 1.0
+              }
+            },
+            "color": {
+              "alpha": 1.0,
+              "hue": 0.0,
+              "saturation": 0.0,
+              "value": 1.0
+            },
+            "text-content": "SAVE",
+            "overflow": "visible",
+            "max-lines": -1,
+            "text-align": "left",
+            "text-align-vertical": "center",
+            "text-size": 32.0,
+            "letter-spacing": 0.25,
+            "line-height": 0.625,
+            "typeface": "Ribeye Marrow"
+          },
+          {
+            "id": "Rectangle 5",
+            "margin": {
+              "left": 93.0,
+              "top": 790.0,
+              "right": 226.0,
+              "bottom": 292.0
+            },
+            "border-radius": 9.0,
+            "size-constraints": {
+              "width-constraints": {
+                "sizing-mode": "proportional",
+                "value": 1.0
+              },
+              "height-constraints": {
+                "sizing-mode": "proportional",
+                "value": 1.0
+              }
+            },
+            "vector-content": "rectangle_5.svg"
+          },
+          {
+            "id": "Calendar",
+            "margin": {
+              "left": 255.0,
+              "top": 798.0,
+              "right": 237.0,
+              "bottom": 298.0
+            },
+            "is-structured": false
+          },
+          {
+            "id": "Icon000",
+            "margin": {
+              "left": 259.0,
+              "top": 800.6666259765625,
+              "right": 241.0,
+              "bottom": 300.6667060852051
+            },
+            "alignment": {
+              "horizontal": {
+                "attachment": "start",
+                "offset": -2.0
+              },
+              "vertical": {
+                "attachment": "start",
+                "offset": -2.0
+              }
+            },
+            "size-constraints": {
+              "width-constraints": {
+                "sizing-mode": "proportional",
+                "value": 1.0
+              },
+              "height-constraints": {
+                "sizing-mode": "proportional",
+                "value": 1.0
+              }
+            },
+            "vector-content": "icon000.svg"
+          },
+          {
+            "id": "EXP product",
+            "margin": {
+              "left": 93.000732421875,
+              "top": 748.0,
+              "right": 261.999267578125,
+              "bottom": 326.0
+            },
+            "size-constraints": {
+              "width-constraints": {
+                "sizing-mode": "proportional",
+                "value": 1.0
+              },
+              "height-constraints": {
+                "sizing-mode": "proportional",
+                "value": 1.0
+              }
+            },
+            "text-content": "EXP product",
+            "overflow": "visible",
+            "max-lines": -1,
+            "text-align": "left",
+            "text-align-vertical": "center",
+            "text-size": 20.0,
+            "letter-spacing": 0.25,
+            "typeface": "Ribeye Marrow"
+          },
+          {
+            "id": "NAE product",
+            "margin": {
+              "left": 93.0,
+              "top": 537.0,
+              "right": 197.0,
+              "bottom": 537.0
+            },
+            "size-constraints": {
+              "width-constraints": {
+                "sizing-mode": "proportional",
+                "value": 1.0
+              },
+              "height-constraints": {
+                "sizing-mode": "proportional",
+                "value": 1.0
+              }
+            },
+            "text-content": "Product information ",
+            "overflow": "visible",
+            "max-lines": -1,
+            "text-align": "left",
+            "text-align-vertical": "center",
+            "text-size": 20.0,
+            "letter-spacing": 0.25,
+            "typeface": "Ribeye Marrow"
+          },
+          {
+            "id": "NAME product",
+            "margin": {
+              "left": 93.000732421875,
+              "top": 465.0,
+              "right": 261.999267578125,
+              "bottom": 609.0
+            },
+            "size-constraints": {
+              "width-constraints": {
+                "sizing-mode": "proportional",
+                "value": 1.0
+              },
+              "height-constraints": {
+                "sizing-mode": "proportional",
+                "value": 1.0
+              }
+            },
+            "text-content": "NAME product",
+            "overflow": "visible",
+            "max-lines": -1,
+            "text-align": "left",
+            "text-align-vertical": "center",
+            "text-size": 20.0,
+            "letter-spacing": 0.25,
+            "typeface": "Ribeye Marrow"
+          },
+          {
+            "id": "image 2",
+            "margin": {
+              "left": 182.0,
+              "top": 228.99993896484375,
+              "right": 184.03692626953125,
+              "bottom": 736.4912872314453
+            },
+            "size-constraints": {
+              "width-constraints": {
+                "sizing-mode": "proportional",
+                "value": 1.0
+              },
+              "height-constraints": {
+                "sizing-mode": "proportional",
+                "value": 1.0
+              }
+            },
+            "image-content": "image_2.png",
+            "scale": "fill"
+          },
+          {
+            "id": "Upload",
+            "margin": {
+              "left": 175.0,
+              "top": 401.0,
+              "right": 166.0,
+              "bottom": 682.0
+            },
+            "size-constraints": {
+              "width-constraints": {
+                "sizing-mode": "proportional",
+                "value": 1.0
+              },
+              "height-constraints": {
+                "sizing-mode": "proportional",
+                "value": 1.0
+              }
+            },
+            "text-content": "Upload\n",
+            "overflow": "visible",
+            "max-lines": -1,
+            "text-align": "left",
+            "text-align-vertical": "center",
+            "text-size": 48.0,
+            "letter-spacing": 0.25,
+            "line-height": 0.4166666793823242,
+            "typeface": "Ribeye Marrow"
+          },
+          {
+            "id": "Icon8888",
+            "margin": {
+              "left": 81.0,
+              "top": 161.0,
+              "right": 392.0,
+              "bottom": 916.0
+            },
+            "is-structured": false,
+            "clip-content": false
+          },
+          {
+            "id": "icon",
+            "margin": {
+              "left": 87.375,
+              "top": 173.75,
+              "right": 398.375,
+              "bottom": 928.75
+            },
+            "size-constraints": {
+              "width-constraints": {
+                "sizing-mode": "proportional",
+                "value": 1.0
+              },
+              "height-constraints": {
+                "sizing-mode": "proportional",
+                "value": 1.0
+              }
+            },
+            "vector-content": "icon.svg"
+          }
+        ]
+      }
+    }
+  },
+  "previews": [
+    {
+      "design": "test100",
+      "size": {
+        "width": 524.0,
+        "height": 1128.0
+      }
+    }
+  ],
+  "adin-component-search-paths": [],
+  "image-search-paths": [],
+  "vector-search-paths": []
+}
