@@ -1,0 +1,31 @@
+# ระบบทั่วไป
+.DS_Store
+Thumbs.db
+
+# Android Studio
+*.iml
+.idea/
+.gradle/
+local.properties
+*.hprof
+.cxx/
+
+# Build files
+/build/
+*/build/
+
+# Output APKs
+*.apk
+*.aab
+
+# Keystore
+*.jks
+*.keystore
+
+# OS และ Editor
+*.log
+*.swp
+.vscode/
+
+# Kotlin / Java
+*.class

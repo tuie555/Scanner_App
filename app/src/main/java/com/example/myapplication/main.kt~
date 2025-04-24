@@ -1,0 +1,18 @@
+package com.example.myapplication
+
+import android.os.Bundle
+import androidx.core.app.ComponentActivity
+import com.example.myapplication.viewmodel.ProductViewModel
+
+class main : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        val viewModel = ProductViewModel() // หรือใช้ Hilt ถ้าคุณใช้ DI
+        setContent {
+            YourAppTheme {
+                MainActivityContent(viewModel)
+            }
+        }
+    }
+}
+
