@@ -62,6 +62,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import coil.compose.rememberAsyncImagePainter
+import com.example.myapplication.barcode.Scanner
 
 class MainActivity2 : ComponentActivity() {
 
@@ -345,7 +346,7 @@ fun BottomBar(navController: NavHostController,isSettingsScreen: Boolean,
                 .size(width = 100.dp, height = 60.dp) // Set width and height for oval shape
                 .clip(RoundedCornerShape(28.dp)) // Use RoundedCornerShape to create an oval
                 .background(blue400) // Background color
-                .clickable(onClick = { context.startActivity(Intent(context, MainActivity::class.java)) }), // Handle click
+                .clickable(onClick = { context.startActivity(Intent(context, Scanner::class.java)) }), // Handle click
             contentAlignment = Alignment.Center // Center the icon
         ) {
 

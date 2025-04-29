@@ -3,6 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-feature android:name="android.hardware.camera.any" />
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <uses-permission android:name="android.permission.CAMERA" />
 
@@ -24,8 +25,9 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".Setting"></activity>
-        <activity android:name=".MainActivity" android:exported="true" />
+
+        <activity android:name=".barcode.Add"></activity>
+        <activity android:name=".barcode.Scanner" android:exported="true" />
     </application>
 
 </manifest>
