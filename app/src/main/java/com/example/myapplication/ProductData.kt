@@ -1,15 +1,14 @@
-// Data class สำหรับสินค้า
+package com.example.myapplication.data
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+
+
+@Entity(tableName = "product_table")
 data class ProductData(
+    @PrimaryKey val barcode: String,
     val product_name: String,
     val categories: String,
     val image_url: String
 )
 
-// สร้าง list เก็บสินค้า (เหมือน database)
-val productList = mutableListOf<ProductData>()
 
-// ฟังก์ชันเพิ่มสินค้า
-fun addProductToList(name: String, categories: String, imageUrl: String) {
-    val product = ProductData(name, categories, imageUrl)
-    productList.add(product)
-}

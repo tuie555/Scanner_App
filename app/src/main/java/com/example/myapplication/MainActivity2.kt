@@ -1,6 +1,7 @@
 package com.example.myapplication
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
@@ -44,6 +45,7 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -63,6 +65,8 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import coil.compose.rememberAsyncImagePainter
 import com.example.myapplication.barcode.Scanner
+import com.example.myapplication.barcode.getProductData
+
 
 class MainActivity2 : ComponentActivity() {
 
@@ -85,8 +89,12 @@ class MainActivity2 : ComponentActivity() {
     )
 
     override fun onCreate(savedInstanceState: Bundle?) {
+
         super.onCreate(savedInstanceState)
+
         setContent {
+            InventoryScreen()
+
             val navController = rememberNavController()
             var isSettingsScreen by remember { mutableStateOf(false) }
             var searchText by remember { mutableStateOf("") }
@@ -385,5 +393,36 @@ fun BottomBar(navController: NavHostController,isSettingsScreen: Boolean,
 
         }
     }
+
+@Composable
+fun InventoryScreen() {
+    val context = LocalContext.current
+
+    LaunchedEffect(Unit) {
+        try {
+            val db = InventoryDatabase.getDatabase(context)
+            val dao = db.productDao()
+
+            val barcodes = listOf("737628064502", "1234567890123")
+
+            for (barcode in barcodes) {
+                val product = getProductData(barcode) // suspend
+                Log.d("ProductList","ไปปป")
+                if (product != null) {
+                    dao.insertProduct(product) // suspend
+                }
+            }
+
+            val products = dao.getAllProducts() // suspend
+            products.forEach {
+                Log.d("ProductList", "${it.product_name} / ${it.categories} / ${it.image_url}")
+            }
+
+        } catch (e: Exception) {
+            Log.e("imon", "CRASH: ${e.message}", e)
+        }
+    }
+}
+
 
 

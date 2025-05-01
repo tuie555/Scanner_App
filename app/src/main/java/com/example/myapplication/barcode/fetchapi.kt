@@ -1,6 +1,8 @@
 package com.example.myapplication.barcode
 
+
 import android.util.Log
+import com.example.myapplication.data.ProductData
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.cio.CIO
@@ -27,31 +29,37 @@ data class Product(
 
 // 2. ฟังก์ชันดึงข้อมูลจาก API
 
-suspend fun getProductData(barcode: String) {
-    withContext(Dispatchers.IO) { // 👈 ย้ายมาทำงานใน IO thread
-        val client = HttpClient(CIO) {
-            install(ContentNegotiation) {
-                json(Json {
-                    ignoreUnknownKeys = true
-                })
-            }
-        }
-
-        try {
-            val response: ProductResponse = client.get("https://world.openfoodfacts.org/api/v0/product/$barcode.json").body()
-
-            response.product?.let { product ->
-                Log.d("GetProductData", "ชื่อสินค้า: ${product.product_name}")
-                Log.d("GetProductData", "ประเภทสินค้า: ${product.categories}")
-                Log.d("GetProductData", "รูปสินค้า: ${product.image_url}")
-            } ?: run {
-                Log.d("GetProductData", "ไม่พบข้อมูลสินค้า")
-            }
-
-        } catch (e: Exception) {
-            Log.e("GetProductData", "เกิดข้อผิดพลาด", e)
-        } finally {
-            client.close()
+suspend fun getProductData(barcode: String): ProductData? = withContext(Dispatchers.IO) {
+    val client = HttpClient(CIO) {
+        install(ContentNegotiation) {
+            json(Json {
+                ignoreUnknownKeys = true
+            })
         }
     }
+
+    try {
+        val response: ProductResponse = client
+            .get("https://world.openfoodfacts.org/api/v0/product/$barcode.json")
+            .body()
+
+        response.product?.let { product ->
+            val name = product.product_name ?: return@withContext null
+            val categories = product.categories ?: return@withContext null
+            val imageUrl = product.image_url ?: return@withContext null
+
+            ProductData(
+                barcode = barcode,
+                product_name = name,
+                categories = categories,
+                image_url = imageUrl
+            )
+        }
+    } catch (e: Exception) {
+        Log.e("GetProductData", "An error occurred", e)
+        null
+    } finally {
+        client.close()
+    }
 }
+
