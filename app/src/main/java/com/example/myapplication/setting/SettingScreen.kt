@@ -120,6 +120,7 @@ enum class VisibleSelector {
     ALERT_BEFORE_EXPIRED,
     ALERT_MODE,
     REPEAT_ALERT,
-    ChangeMail
+    ChangeMail,
+    Mail
 }
 
