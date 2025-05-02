@@ -66,6 +66,7 @@ import androidx.navigation.compose.rememberNavController
 import coil.compose.rememberAsyncImagePainter
 import com.example.myapplication.barcode.Scanner
 import com.example.myapplication.barcode.getProductData
+import com.example.myapplication.data.ProductData
 
 
 class MainActivity2 : ComponentActivity() {
@@ -397,18 +398,19 @@ fun BottomBar(navController: NavHostController,isSettingsScreen: Boolean,
 @Composable
 fun InventoryScreen() {
     val context = LocalContext.current
-
+    val db = InventoryDatabase.getDatabase(context)
+    val dao =db.productDao()
     LaunchedEffect(Unit) {
         try {
-            val db = InventoryDatabase.getDatabase(context)
-            val dao = db.productDao()
+
 
             val barcodes = listOf("737628064502", "1234567890123")
 
             for (barcode in barcodes) {
                 val product = getProductData(barcode) // suspend
-                Log.d("ProductList","ไปปป")
+
                 if (product != null) {
+                    Log.d("ProductList","ไปปป")
                     dao.insertProduct(product) // suspend
                 }
             }
