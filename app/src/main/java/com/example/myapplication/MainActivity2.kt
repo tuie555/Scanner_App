@@ -46,6 +46,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -61,12 +62,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import coil.compose.rememberAsyncImagePainter
+import com.example.myapplication.barcode.Add
 import com.example.myapplication.barcode.Scanner
 import com.example.myapplication.barcode.getProductData
 import com.example.myapplication.data.ProductData
+import kotlinx.coroutines.flow.forEach
 
 
 class MainActivity2 : ComponentActivity() {
@@ -94,13 +99,15 @@ class MainActivity2 : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         setContent {
-            InventoryScreen()
+
 
             val navController = rememberNavController()
             var isSettingsScreen by remember { mutableStateOf(false) }
             var searchText by remember { mutableStateOf("") }
             var isFilterScreen by remember { mutableStateOf(false) }
-
+            val context = LocalContext.current
+            val viewmodel:Productviewmodel = viewModel (factory = ViewModelProvider.AndroidViewModelFactory.getInstance(context.applicationContext as android.app.Application))
+            val products by viewmodel.productFlow.collectAsState(initial = emptyList())
             Scaffold(
                 topBar = {
                 if (!isSettingsScreen)   {
@@ -129,7 +136,7 @@ class MainActivity2 : ComponentActivity() {
 
 @Composable
 fun ProductListScreen(
-    products: List<MainActivity2.Product>,
+    products: List<ProductData>,
     navController: NavHostController,
     paddingValues: PaddingValues,
     searchText: String
@@ -145,7 +152,7 @@ fun ProductListScreen(
         products
     } else {
         products.filter {
-            it.name.contains(searchText, ignoreCase = true) || it.category.contains(searchText, ignoreCase = true)
+            it.product_name.contains(searchText, ignoreCase = true) || it.categories.contains(searchText, ignoreCase = true)
         }
     }
 
@@ -157,8 +164,8 @@ fun ProductListScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            items(filteredProducts) { product ->
-                ProductCard(product)
+            items(filteredProducts) { products ->
+                ProductCard(products)
             }
         }
     }
@@ -240,7 +247,7 @@ fun TopBar(
 }
 
 @Composable
-fun ProductCard(product: MainActivity2.Product) {
+fun ProductCard(product: ProductData) {
     Card(
         shape = RoundedCornerShape(10.dp),
         backgroundColor = Color.White,
@@ -260,7 +267,7 @@ fun ProductCard(product: MainActivity2.Product) {
                     .padding(horizontal = 8.dp, vertical = 2.dp)
             ) {
                 Text(
-                    text = product.category,
+                    text = product.categories,
                     fontSize = 12.sp,
                     color = Color(0xFF1976D2),
                     fontWeight = FontWeight.Bold
@@ -273,8 +280,8 @@ fun ProductCard(product: MainActivity2.Product) {
                 contentAlignment = Alignment.Center
             ) {
                 Image(
-                    painter = rememberAsyncImagePainter(product.imageUrl),
-                    contentDescription = "${product.name} image",
+                    painter = rememberAsyncImagePainter(product.image_url),
+                    contentDescription = "${product.product_name} image",
                     modifier = Modifier.size(60.dp),
                     contentScale = ContentScale.Crop // Changed to Crop for better image filling
                 )
@@ -290,22 +297,14 @@ fun ProductCard(product: MainActivity2.Product) {
                     modifier = Modifier.weight(1f)
                 ) {
                     Text(
-                        text = product.name,
+                        text = product.product_name,
                         fontWeight = FontWeight.Bold,
                         fontSize = 14.sp,
                         color = Color.Black,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
-                    if (product.expiry.isNotEmpty()) {
-                        Text(
-                            text = product.expiry,
-                            fontSize = 12.sp,
-                            color = Color(0xFFD32F2F), // Red color for expiry
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
+
                 }
                 IconButton(
                     onClick = { /* More options */ },
@@ -355,7 +354,7 @@ fun BottomBar(navController: NavHostController,isSettingsScreen: Boolean,
                 .size(width = 100.dp, height = 60.dp) // Set width and height for oval shape
                 .clip(RoundedCornerShape(28.dp)) // Use RoundedCornerShape to create an oval
                 .background(blue400) // Background color
-                .clickable(onClick = { context.startActivity(Intent(context, Scanner::class.java)) }), // Handle click
+                .clickable(onClick = { context.startActivity(Intent(context, Add::class.java)) }), // Handle click
             contentAlignment = Alignment.Center // Center the icon
         ) {
 
@@ -395,36 +394,7 @@ fun BottomBar(navController: NavHostController,isSettingsScreen: Boolean,
         }
     }
 
-@Composable
-fun InventoryScreen() {
-    val context = LocalContext.current
-    val db = InventoryDatabase.getDatabase(context)
-    val dao =db.productDao()
-    LaunchedEffect(Unit) {
-        try {
 
-
-            val barcodes = listOf("737628064502", "1234567890123")
-
-            for (barcode in barcodes) {
-                val product = getProductData(barcode) // suspend
-
-                if (product != null) {
-                    Log.d("ProductList","ไปปป")
-                    dao.insertProduct(product) // suspend
-                }
-            }
-
-            val products = dao.getAllProducts() // suspend
-            products.forEach {
-                Log.d("ProductList", "${it.product_name} / ${it.categories} / ${it.image_url}")
-            }
-
-        } catch (e: Exception) {
-            Log.e("imon", "CRASH: ${e.message}", e)
-        }
-    }
-}
 
 
 

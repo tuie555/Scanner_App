@@ -5,11 +5,12 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.example.myapplication.data.ProductData
 import com.example.myapplication.setting.SettingsScreen
 import com.example.myapplication.sortandfilter.SandFscreen
 
 @Composable
-fun NavigationGraph(navController: NavHostController, products: List<MainActivity2.Product>, paddingValues: PaddingValues, searchText: String) {
+fun NavigationGraph(navController: NavHostController, products: List<ProductData>, paddingValues: PaddingValues, searchText: String) {
     NavHost(navController, startDestination = "productList") {
         composable("productList") { ProductListScreen(products, navController, paddingValues, searchText) }
         composable("settings") { SettingsScreen(navController) }
