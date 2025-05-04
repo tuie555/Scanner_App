@@ -52,7 +52,8 @@ suspend fun getProductData(barcode: String): ProductData? = withContext(Dispatch
                 barcode = barcode,
                 product_name = name,
                 categories = categories,
-                image_url = imageUrl
+                image_url = imageUrl,
+
             )
         }
     } catch (e: Exception) {
