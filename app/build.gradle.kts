@@ -3,8 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.compose.compiler)
-    id("org.jetbrains.kotlin.kapt")
-
+    id("com.google.devtools.ksp") version "2.1.20-2.0.1"
 
 }
 
@@ -57,9 +56,7 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
-    kapt {
-        correctErrorTypes = true
-    }
+
 
 }
 
@@ -69,10 +66,8 @@ dependencies {
     implementation(libs.material)
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
-    kapt("androidx.room:room-compiler:2.6.1")
     val camerax_version = "1.5.0-alpha05"
     val ktor_version = "3.0.3"
-    val logback_version = "1.5.6"
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -100,9 +95,9 @@ dependencies {
     implementation("io.ktor:ktor-client-cio:3.0.3")
     implementation("io.ktor:ktor-client-plugins:3.0.3")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.3")
-    implementation("androidx.room:room-runtime:2.6.1")
-    implementation("androidx.room:room-ktx:2.6.1")
-
+    implementation("androidx.room:room-runtime:2.7.1")
+    implementation("androidx.room:room-ktx:2.7.1")
+    ksp("androidx.room:room-compiler:2.7.1")
 
     // Jetpack Compose Dependencies
     implementation("androidx.compose.ui:ui:1.3.0")
