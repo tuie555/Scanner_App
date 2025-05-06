@@ -9,6 +9,8 @@ data class ProductData(
     val product_name: String,
     val categories: String,
     val image_url: String,
+
+
 )
 
 

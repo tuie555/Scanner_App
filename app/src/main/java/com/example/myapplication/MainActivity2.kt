@@ -68,10 +68,8 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import coil.compose.rememberAsyncImagePainter
 import com.example.myapplication.barcode.Add
-import com.example.myapplication.barcode.Scanner
-import com.example.myapplication.barcode.getProductData
+
 import com.example.myapplication.data.ProductData
-import kotlinx.coroutines.flow.forEach
 
 
 class MainActivity2 : ComponentActivity() {

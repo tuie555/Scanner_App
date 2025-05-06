@@ -27,7 +27,6 @@ data class Product(
     val categories: String? = null
 )
 
-// 2. ฟังก์ชันดึงข้อมูลจาก API
 
 suspend fun getProductData(barcode: String): ProductData? = withContext(Dispatchers.IO) {
     val client = HttpClient(CIO) {
@@ -63,4 +62,6 @@ suspend fun getProductData(barcode: String): ProductData? = withContext(Dispatch
         client.close()
     }
 }
+
+
 

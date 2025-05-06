@@ -2,6 +2,7 @@ package com.example.myapplication.barcode
 
 import android.Manifest
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.util.Size
@@ -29,8 +30,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import androidx.core.content.ContextCompat.startActivity
 import androidx.lifecycle.LifecycleOwner
 import com.example.myapplication.ui.theme.MyApplicationTheme
+
 import com.google.mlkit.vision.barcode.BarcodeScannerOptions
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
@@ -111,7 +114,7 @@ private fun startCamera(previewView: PreviewView, context: Context) {
         Log.d("CameraSetup", "Setting up image analysis")
         val camera = cameraProvider.bindToLifecycle(context as LifecycleOwner, cameraSelector, preview, imageAnalysis)
         val cameraControl = camera.cameraControl
-        imageAnalysis.setAnalyzer(ContextCompat.getMainExecutor(context), ImageAnalyzer(cameraControl))
+        imageAnalysis.setAnalyzer(ContextCompat.getMainExecutor(context),   ImageAnalyzer(context, cameraControl))
 
         Log.d("CameraSetup", "Camera successfully bound to lifecycle")
     }, ContextCompat.getMainExecutor(context))
@@ -119,8 +122,15 @@ private fun startCamera(previewView: PreviewView, context: Context) {
 
 
 
-private class ImageAnalyzer(private val cameraControl: CameraControl) : ImageAnalysis.Analyzer {
+private class ImageAnalyzer(private val context: Context,private val cameraControl: CameraControl,) : ImageAnalysis.Analyzer {
     private var isProcessingBarcode = false
+    fun Context.goToNextPage(targetActivity: Class<*>, extras: Map<String, String> = emptyMap()) {
+        val intent = Intent(this, targetActivity)
+        for ((key, value) in extras) {
+            intent.putExtra(key, value)
+        }
+        startActivity(intent)
+    }
     @OptIn(ExperimentalGetImage::class)
     override fun analyze(imageProxy: ImageProxy) {
         Log.d("ImageAnalyzer", "Analyzing image...")
@@ -164,15 +174,16 @@ private class ImageAnalyzer(private val cameraControl: CameraControl) : ImageAna
                     if (!isProcessingBarcode) {
                         isProcessingBarcode = true // <<< เจอบาร์โค้ดครั้งแรก
 
-                        val barcodes = barcodes.firstOrNull()?.displayValue
-
-                        barcodes?.let { value ->
-
-                            Log.d("Barcode", "Detected barcode: $barcodes")
-                            CoroutineScope(Dispatchers.IO).launch {
-                                getProductData(barcodes)
+                        val barcodeValue = barcodes.firstOrNull()?.displayValue
+                        if (barcodeValue != null) {
+                            Log.d("Barcode", "Detected barcode: $barcodeValue")
+                            CoroutineScope(Dispatchers.Main).launch {
+                                context.goToNextPage(Add::class.java, mapOf("barcode" to barcodeValue))
                             }
                         }
+
+
+
                     }
                 } else {
                     cameraControl.setZoomRatio(1.0f)
@@ -194,3 +205,6 @@ private class ImageAnalyzer(private val cameraControl: CameraControl) : ImageAna
         }
     }
 }
+
+
+
