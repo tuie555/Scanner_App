@@ -72,6 +72,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import coil.compose.rememberAsyncImagePainter
 import com.example.myapplication.data.ProductData
+import com.example.myapplication.setting.SettingsScreen
 import com.example.myapplication.setting.components.OptionSelector
 import com.example.myapplication.setting.components.SettingsItem
 import com.example.myapplication.ui.theme.MyApplicationTheme
@@ -106,24 +107,23 @@ fun ProductScreen(barcode: String) {
     Log.d("ProductScreen", "Scanned barcode: $barcode")
     var product by remember { mutableStateOf<ProductData?>(null) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
-
+    var isLoading by remember { mutableStateOf(true) }
     // 🔍 Fetch data once when barcode changes
     LaunchedEffect(barcode) {
+        isLoading = true
         val result = getProductData(barcode)
         if (result != null) {
             product = result
+
+            // Log รายละเอียดเมื่อได้ข้อมูลแล้ว
+            Log.d("ProductScreen", "🧾 Product Name: ${result.product_name}")
+            Log.d("ProductScreen", "📦 Categories: ${result.categories}")
+            Log.d("ProductScreen", "🖼️ Image URL: ${result.image_url}")
         } else {
+            Log.d("Err0","No")
             errorMessage = "Product not found or failed to fetch."
         }
-    }
-
-    // 📝 Log product details when it becomes available
-    LaunchedEffect(product) {
-        product?.let {
-            Log.d("ProductScreen", "🧾 Product Name: ${it.product_name}")
-            Log.d("ProductScreen", "📦 Categories: ${it.categories}")
-            Log.d("ProductScreen", "🖼️ Image URL: ${it.image_url}")
-        }
+        isLoading = false
     }
 
 

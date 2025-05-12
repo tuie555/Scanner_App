@@ -131,10 +131,14 @@ private class ImageAnalyzer(private val context: Context,private val cameraContr
         }
         startActivity(intent)
     }
+
     @OptIn(ExperimentalGetImage::class)
     override fun analyze(imageProxy: ImageProxy) {
         Log.d("ImageAnalyzer", "Analyzing image...")
-        Log.d("ImageAnalyzer", "ImageProxy: width=${imageProxy.width}, height=${imageProxy.height}, format=${imageProxy.format}")
+        Log.d(
+            "ImageAnalyzer",
+            "ImageProxy: width=${imageProxy.width}, height=${imageProxy.height}, format=${imageProxy.format}"
+        )
         if (isProcessingBarcode) {
             imageProxy.close()  // ปิด imageProxy ทันทีหากกำลังประมวลผล
             return
@@ -142,7 +146,8 @@ private class ImageAnalyzer(private val context: Context,private val cameraContr
         val mediaImage = imageProxy.image
 
         if (mediaImage != null) {
-            val inputImage = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
+            val inputImage =
+                InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
 
             Log.d("ImageAnalyzer", "Image analyzed")
 
@@ -168,43 +173,49 @@ private class ImageAnalyzer(private val context: Context,private val cameraContr
                 .build()
 
             val scanner = BarcodeScanning.getClient(options)
-            scanner.process(inputImage).addOnSuccessListener { barcodes ->
-                if (barcodes.isNotEmpty()) {
-                    cameraControl.setZoomRatio(2.0f)
-                    if (!isProcessingBarcode) {
-                        isProcessingBarcode = true // <<< เจอบาร์โค้ดครั้งแรก
-
-                        val barcodeValue = barcodes.firstOrNull()?.displayValue
-                        if (barcodeValue != null) {
-                            Log.d("Barcode", "Detected barcode: $barcodeValue")
-                            CoroutineScope(Dispatchers.Main).launch {
-                                context.goToNextPage(Add::class.java, mapOf("barcode" to barcodeValue))
-                            }
-                        }
-
-
-
+            scanner.process(inputImage)
+                .addOnSuccessListener { barcodes ->
+                    // Debug: พิมพ์บาร์โค้ดทั้งหมดที่ detect ได้
+                    barcodes.forEach {
+                        Log.d(
+                            "DEBUG_SCAN",
+                            "Detected: rawValue=${it.rawValue}, format=${it.format}"
+                        )
                     }
-                } else {
-                    cameraControl.setZoomRatio(1.0f)
+
+                    // กรองเฉพาะบาร์โค้ดที่มี rawValue ที่ใช้งานได้จริง
+                    val barcode = barcodes.firstOrNull {
+                        val value = it.rawValue
+                        value != null &&
+                                value.isNotBlank() &&
+                                value.matches(Regex("^[0-9A-Za-z\\-]{6,30}$")) // <-- ปรับ regex ตามที่คุณใช้จริง
+                    }
+
+                    val barcodeValue = barcode?.rawValue
+
+                    if (barcodeValue != null && !isProcessingBarcode) {
+                        isProcessingBarcode = true
+                        Log.d("Barcode", "✅ Valid barcode: $barcodeValue")
+
+                        CoroutineScope(Dispatchers.Main).launch {
+                            context.goToNextPage(Add::class.java, mapOf("barcode" to barcodeValue))
+                        }
+                    } else {
+                        Log.d("Barcode", "❌ No valid barcode or already processing")
+                        cameraControl.setZoomRatio(1.0f)
+                    }
                 }
-            }
                 .addOnFailureListener { e ->
                     Log.e("Barcode", "Barcode scanning failed", e)
                 }
-                .addOnCompleteListener{
-                    // Close the imageProxy after processing
+                .addOnCompleteListener {
                     imageProxy.close()
-                    isProcessingBarcode = false // <<< ปิดการประมวลผล
-
+                    // อย่าปล่อยให้ isProcessingBarcode กลับเป็น false หากกำลังเปลี่ยนหน้าอยู่
+                    // ถ้าอยากให้สแกนได้อีกครั้งหลังกลับมา ให้ reset flag ที่หน้าต่อไปแทน
                 }
-
         } else {
             Log.e("ImageAnalyzer", "Media image is null")
             imageProxy.close()
         }
     }
 }
-
-
-
