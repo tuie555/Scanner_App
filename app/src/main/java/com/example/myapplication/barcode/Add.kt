@@ -2,15 +2,16 @@
 
 package com.example.myapplication.barcode;
 
-import android.app.Activity
-
+import AddViewModelFactory
+import InventoryDatabase
+import android.content.Context
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
@@ -29,7 +30,6 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
@@ -54,6 +54,7 @@ import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -64,75 +65,96 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavHostController
-import androidx.navigation.compose.rememberNavController
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.room.Room
 import coil.compose.rememberAsyncImagePainter
+import com.example.myapplication.Addviewmodel
 import com.example.myapplication.data.ProductData
-import com.example.myapplication.setting.SettingsScreen
 import com.example.myapplication.setting.components.OptionSelector
-import com.example.myapplication.setting.components.SettingsItem
-import com.example.myapplication.ui.theme.MyApplicationTheme
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
 class Add : ComponentActivity() {
 
+    private lateinit var viewModel: Addviewmodel
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
 
-        // Retrieve the barcode from the intent
-        val barcode = intent.getStringExtra("barcode") ?: ""
+        // Initialize database and ViewModel before setContent
+        val barcode = intent?.getStringExtra("barcode") ?: "No barcode found"
+        val db = InventoryDatabase.getDatabase(applicationContext) // ✅ Use singleton getter
+        val productDao = db.productDao()
+
+        val factory = AddViewModelFactory(productDao)
+        viewModel = ViewModelProvider(this, factory)[Addviewmodel::class.java] // ✅ Safe initialization
 
         setContent {
-            MyApplicationTheme {
-                ProductScreen(barcode) // ✅ Pass the barcode into your composable
-            }
+            ProductScreen(barcode = barcode, viewModel = viewModel)
         }
     }
-
 }
 
 
 
 @Composable
-fun ProductScreen(barcode: String) {
-
-
+fun ProductScreen(barcode: String, viewModel: Addviewmodel) {
     Log.d("ProductScreen", "Scanned barcode: $barcode")
-    var product by remember { mutableStateOf<ProductData?>(null) }
+
+    val context = LocalContext.current
+
+    var name by remember { mutableStateOf("") }
+    var categories by remember { mutableStateOf("") }
+    var imageUrl by remember { mutableStateOf("") }
+    var expirationDate by remember { mutableStateOf<String?>(null) }
+    var addDay by remember { mutableStateOf<String?>(null) }
+    var notes by remember { mutableStateOf("") }
+
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var isLoading by remember { mutableStateOf(true) }
-    // 🔍 Fetch data once when barcode changes
+    var newImageUri by remember { mutableStateOf<Uri?>(null) }
+
     LaunchedEffect(barcode) {
         isLoading = true
-        val result = getProductData(barcode)
-        if (result != null) {
-            product = result
 
-            // Log รายละเอียดเมื่อได้ข้อมูลแล้ว
-            Log.d("ProductScreen", "🧾 Product Name: ${result.product_name}")
-            Log.d("ProductScreen", "📦 Categories: ${result.categories}")
-            Log.d("ProductScreen", "🖼️ Image URL: ${result.image_url}")
-        } else {
-            Log.d("Err0","No")
+        val product = getProductData(barcode) // Directly call your suspend function here
+
+        product?.let {
+            name = it.product_name
+            categories = it.categories
+            imageUrl = it.image_url
+            expirationDate = it.expiration_date?.toDateString()
+            addDay = it.add_day?.toDateString()
+            notes = it.notes
+
+            Log.d("ProductData", "Name: $name, Categories: $categories, Image URL: $imageUrl")
+        } ?: run {
             errorMessage = "Product not found or failed to fetch."
         }
+
         isLoading = false
     }
 
+    // Main UI
+    Box(modifier = Modifier.fillMaxSize()) {
+        CenterAlignedTopAppBarExample(
+            name = name,
+            categories = categories,
+            imageUrl = imageUrl,
+            addDay = addDay,
+            expirationDate = expirationDate,
+            notes = notes,
+            viewModel = viewModel,
+            context = context
+        )
 
-    ////////////////////////////////////////////////////
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-    ) {
-        CenterAlignedTopAppBarExample()
 
         Column(
             modifier = Modifier
@@ -140,23 +162,113 @@ fun ProductScreen(barcode: String) {
                 .padding(top = 100.dp, start = 16.dp, end = 16.dp)
         ) {
             Spacer(modifier = Modifier.height(16.dp))
+
             AddPhotoButton(
+                imageUrl = imageUrl,
+                currentUri = newImageUri,
+                onImageUriChanged = { uri -> newImageUri = uri },
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             )
+
             Spacer(modifier = Modifier.height(10.dp))
 
-            EmailInputExample()
-            val navController = rememberNavController()
-            SettingsScreen(navController = navController)
-            ExpirationDateSelector()
-            DayAdd()
-            Notes()
+            EmailInputExample(
+                productName1 = name,
+                onValueChange = { name = it }
+            )
+
+            SettingsScreenadd(
+                categories = categories,
+                onValueChange = { newCategories -> categories = newCategories }
+            )
+
+            ExpirationDateSelector(
+                onDateChange = { expirationDate = it }
+            )
+
+            DayAdd(
+                selectedDay = addDay,
+                onDayChange = { addDay = it }
+            )
+
+            Notes(
+                notes = notes,
+                onValueChange = { notes = it }
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
 
+
+fun Long.toDateString(): String {
+    val format = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+    return format.format(Date(this))
+}
+
+
+fun String.toEpochMillis(): Long {
+    return try {
+        val format = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+        format.isLenient = false
+        format.parse(this)?.time ?: 0L
+    } catch (e: Exception) {
+        Log.e("ProductScreen", "Date parsing failed for: $this", e)
+        0L
+    }
+}
+
+
+fun saveProductIfValid(
+    viewModel: Addviewmodel,
+    name: String,
+    categories: String,
+    imageUrl: String,
+    addDay: String?,
+    expirationDate: String?,
+    notes: String,
+    context: Context
+) {
+    if (addDay.isNullOrEmpty() || expirationDate.isNullOrEmpty()) {
+        Toast.makeText(context, "Please select Add Day and Expiration Date", Toast.LENGTH_SHORT).show()
+        return
+    }
+
+    val addDayMillis = addDay.toEpochMillis()
+    val expirationMillis = expirationDate.toEpochMillis()
+
+    if (addDayMillis == 0L || expirationMillis == 0L) {
+        Toast.makeText(context, "Invalid date format", Toast.LENGTH_SHORT).show()
+        return
+    }
+
+    viewModel.saveProduct(
+        name = name,
+        categories = categories,
+        imageUrl = imageUrl,
+        add_day = addDayMillis,
+        expie_day = expirationMillis,
+        notes = notes
+    ) {
+
+        Toast.makeText(context, "Product saved successfully", Toast.LENGTH_SHORT).show()
+    }
+
+    Log.d("SaveProduct", "Saving: $name, $categories")
+}
+
 @Composable
-fun CenterAlignedTopAppBarExample() {
+fun CenterAlignedTopAppBarExample(
+    name: String,
+    categories: String,
+    imageUrl: String,
+    addDay: String?,
+    expirationDate: String?,
+    notes: String,
+    viewModel: Addviewmodel,
+    context: Context
+) {
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
 
     Scaffold(
@@ -173,7 +285,25 @@ fun CenterAlignedTopAppBarExample() {
                     BackButton()
                 },
                 actions = {
-                    Text(text = "Done", fontSize = 18.sp)
+                    Text(
+                        text = "Done",
+                        fontSize = 18.sp,
+
+                        modifier = Modifier.clickable {
+                            Log.d("DEBUG", "Done button clicked")
+                            saveProductIfValid(
+                                viewModel = viewModel,
+                                name = name,
+                                categories = categories,
+                                imageUrl = imageUrl,
+                                addDay = addDay,
+                                expirationDate = expirationDate,
+                                notes = notes,
+                                context = context
+                            )
+                        }
+                    )
+
                 },
                 scrollBehavior = scrollBehavior,
             )
@@ -182,6 +312,7 @@ fun CenterAlignedTopAppBarExample() {
         ScrollContent(innerPadding)
     }
 }
+
 
 @Composable
 fun BackButton() {
@@ -198,12 +329,20 @@ fun BackButton() {
 }
 
 @Composable
-fun AddPhotoButton(modifier: Modifier = Modifier) {
-    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+fun AddPhotoButton(
+    imageUrl: String?, // Initial URL from server/database (the one in ProductScreen's `imageUrl` state)
+    currentUri: Uri?,    // The URI of an image newly picked by the user (ProductScreen's `newImageUri` state)
+    onImageUriChanged: (Uri?) -> Unit, // Callback to inform ProductScreen when a new image is picked
+    modifier: Modifier = Modifier
+) {
+    // No longer need local selectedImageUri state here, as ProductScreen will manage it via `currentUri` and `onImageUriChanged`
+    // var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? -> selectedImageUri = uri }
+    ) { uri: Uri? ->
+        onImageUriChanged(uri) // Notify ProductScreen about the new URI
+    }
 
     Box(
         modifier = modifier
@@ -211,36 +350,49 @@ fun AddPhotoButton(modifier: Modifier = Modifier) {
             .height(150.dp)
             .clip(RoundedCornerShape(25.dp))
             .background(Color(0xFFD3D3D3))
-            .clickable { imagePickerLauncher.launch("image/*") },
+            .clickable { imagePickerLauncher.launch("image/*") }, // Launch image picker
         contentAlignment = Alignment.Center
     ) {
-        if (selectedImageUri != null) {
-            Image(painter = rememberAsyncImagePainter(selectedImageUri), contentDescription = null, modifier = Modifier.fillMaxSize())
-        } else {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Icon(Icons.Filled.Image, contentDescription = null)
-                Text("Add a photo of your product.", color = Color.Gray)
+        when {
+            currentUri != null -> { // If a new image has been picked, display it
+                Image(
+                    painter = rememberAsyncImagePainter(currentUri),
+                    contentDescription = "Selected product image",
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+            imageUrl != null && imageUrl.isNotBlank() -> { // Otherwise, if an existing imageUrl exists, display it
+                Image(
+                    painter = rememberAsyncImagePainter(imageUrl),
+                    contentDescription = "Product image",
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+            else -> { // Placeholder if no image
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(Icons.Filled.Image, contentDescription = null)
+                    Text("Add a photo of your product.", color = Color.Gray)
+                }
             }
         }
     }
 }
-
 @Composable
 fun ScrollContent(innerPadding: PaddingValues) {}
 
 @Composable
-fun EmailInputExample() {
-    var productName by remember { mutableStateOf("") }
+fun EmailInputExample(productName1: String, onValueChange: (String) -> Unit) {
     var isVisible by remember { mutableStateOf(false) }
 
     Email(
         label = "Product Name",
-        productName = productName,
-        onProductNameChange = { productName = it },
+        productName = productName1, // Directly use the passed-in value
+        onProductNameChange = { onValueChange(it) }, // Pass changes back
         isVisible = isVisible,
         onToggleVisible = { isVisible = !isVisible }
     )
 }
+
 
 @Composable
 fun Email(label: String, productName: String, onProductNameChange: (String) -> Unit, isVisible: Boolean, onToggleVisible: () -> Unit) {
@@ -287,12 +439,60 @@ fun Email(label: String, productName: String, onProductNameChange: (String) -> U
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ExpirationDateSelector() {
-    val datePickerState = rememberDatePickerState()
+fun ExpirationDateSelector(
+    selectedDate: String? = null,
+    onDateChange: (String) -> Unit
+) {
+    val currentDateMillis = System.currentTimeMillis()
+
+    val datePickerState = rememberDatePickerState(
+        initialSelectedDateMillis = selectedDate?.let { convertDateToMillis(it) } ?: currentDateMillis
+    )
+
+    val formattedDate = convertMillisToDate(datePickerState.selectedDateMillis ?: currentDateMillis)
+
+    // Trigger `onDateChange` when the date changes
+    LaunchedEffect(datePickerState.selectedDateMillis) {
+        datePickerState.selectedDateMillis?.let { millis ->
+            onDateChange(convertMillisToDate(millis))
+        }
+    }
 
     Column(modifier = Modifier.padding(0.dp)) {
-        inputNotFile("Date Day", convertMillisToDate(datePickerState.selectedDateMillis ?: 0L)) {}
-        DatePickerCard(datePickerState)
+        // 🔹 ช่องแสดงวันที่ที่เลือก
+        inputNotFile(
+            label = "Expiration Date",
+            value = datePickerState.selectedDateMillis?.let { convertMillisToDate(it) } ?: "",
+            onToggleVisible = {}
+        )
+
+        // 🔹 ปฏิทินถูกซ่อนไปครึ่งหัวบน
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(380.dp) // ปรับให้พอดีแค่ปฏิทิน
+                .clipToBounds(), // ตัดส่วนที่ล้นไม่ให้แสดง
+            shape = RoundedCornerShape(20.dp),
+            elevation = CardDefaults.cardElevation(4.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .offset(y = (-120).dp) // 👈 ซ่อนหัวด้านบน
+            ) {
+                DatePicker(
+                    state = datePickerState,
+                    showModeToggle = false, // ❌ ไม่ให้ toggle input mode
+                )
+            }
+        }
+    }
+}
+fun convertDateToMillis(date: String): Long {
+    return try {
+        val formatter = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+        formatter.parse(date)?.time ?: System.currentTimeMillis()
+    } catch (e: Exception) {
+        System.currentTimeMillis()
     }
 }
 
@@ -313,15 +513,30 @@ fun DatePickerCard(datePickerState: DatePickerState) {
 }
 
 fun convertMillisToDate(millis: Long): String {
-    val formatter = SimpleDateFormat("MM/dd/yyyy", Locale.getDefault())
+    if (millis == 0L) return "No date selected"
+
+    val formatter = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
     return formatter.format(Date(millis))
 }
 
+
 @Composable
-fun DayAdd() {
-    val today = remember { getTodayDate() }
+fun DayAdd(
+    selectedDay: String? = null,
+    onDayChange: (String) -> Unit
+) {
+    val today = getTodayDate()
+
+    // Initialize with `selectedDay` or fallback to today
+    var day by remember { mutableStateOf(selectedDay ?: today) }
+
     Column(modifier = Modifier.padding(1.dp)) {
-        inputNotFile("Add Day", today) {}
+        inputNotFile(
+            label = "Add Day",
+            value = day
+        ) {
+            onDayChange(day) // Use the current value, or trigger date picker externally
+        }
     }
 }
 
@@ -371,40 +586,64 @@ fun inputNotFile(label: String, value: String, onToggleVisible: () -> Unit) {
 }
 
 @Composable
-fun Notes() {
-    var productName by remember { mutableStateOf("") }
+fun Notes(
+    notes: String,
+    onValueChange: (String) -> Unit
+) {
     var isVisible by remember { mutableStateOf(false) }
 
     Email(
         label = "Notes:",
-        productName = productName,
-        onProductNameChange = { productName = it },
+        productName = notes,
+        onProductNameChange = onValueChange,
         isVisible = isVisible,
         onToggleVisible = { isVisible = !isVisible }
     )
 }
 
+
 fun getTodayDate(): String {
-    val dateFormat = SimpleDateFormat("d/M/yyyy", Locale.getDefault())
-    return dateFormat.format(Date())
+    val formatter = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+    return formatter.format(Date())
 }
 
 @Composable
-fun SettingsScreen(navController: NavHostController) {
+fun SettingsScreenadd(
+    categories: String,
+    onValueChange: (String) -> Unit
+) {
     var visibleSelector by remember { mutableStateOf(VisibleSelector.NONE) }
-    var selectAlertbeforeEX by remember { mutableStateOf(listOf("")) }
-    var alertOptions by remember {
-        mutableStateOf(
-            mutableListOf("+")
-        )
+
+    val parsedCategories = remember(categories) {
+        categories
+            .split(",")
+            .map { it.trim() }
+            .filter { it.startsWith("en:") }
+            .map { it.removePrefix("en:") }
+            .distinct()
     }
 
-    val selectedText = selectAlertbeforeEX.filter { it.isNotBlank() }.joinToString(", ")
+    // Use mutableStateListOf to preserve state reactivity
+    val selectAlertbeforeEX = remember(categories) {
+        mutableStateListOf<String>().apply { addAll(parsedCategories) }
+    }
+
+    val alertOptions = remember(categories) {
+        mutableStateListOf<String>().apply {
+            addAll(parsedCategories)
+            add("+")
+        }
+    }
 
     var isAddingCustomOption by remember { mutableStateOf(false) }
     var customOptionText by remember { mutableStateOf("") }
 
-    SettingsItem("Category:", selectedText) {
+    val selectedText = selectAlertbeforeEX.filter { it.isNotBlank() }.joinToString(", ")
+
+    inputNotFile(
+        label = "Category:",
+        value = selectedText
+    ) {
         visibleSelector = if (visibleSelector == VisibleSelector.ALERT_BEFORE_EXPIRED)
             VisibleSelector.NONE
         else
@@ -433,10 +672,14 @@ fun SettingsScreen(navController: NavHostController) {
                         if (option == "+") {
                             isAddingCustomOption = true
                         } else {
-                            selectAlertbeforeEX = if (option in selectAlertbeforeEX)
-                                selectAlertbeforeEX - option
-                            else
-                                selectAlertbeforeEX + option
+                            if (selectAlertbeforeEX.contains(option)) {
+                                selectAlertbeforeEX.remove(option)
+                            } else {
+                                selectAlertbeforeEX.add(option)
+                            }
+
+                            val updatedCategories = selectAlertbeforeEX.joinToString(", ") { "en:$it" }
+                            onValueChange(updatedCategories)
                         }
                     }
                 }
@@ -445,7 +688,9 @@ fun SettingsScreen(navController: NavHostController) {
             if (isAddingCustomOption) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Card(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp),
                     shape = RoundedCornerShape(12.dp),
                     elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                 ) {
@@ -461,11 +706,13 @@ fun SettingsScreen(navController: NavHostController) {
                         Button(
                             onClick = {
                                 if (customOptionText.isNotBlank()) {
-                                    alertOptions = alertOptions.toMutableList().apply {
-                                        add(size - 1, customOptionText)
-                                    }
+                                    alertOptions.add(alertOptions.size - 1, customOptionText)
+                                    selectAlertbeforeEX.add(customOptionText)
                                     customOptionText = ""
                                     isAddingCustomOption = false
+
+                                    val updatedCategories = selectAlertbeforeEX.joinToString(", ") { "en:$it" }
+                                    onValueChange(updatedCategories)
                                 }
                             },
                             modifier = Modifier.align(Alignment.End)
@@ -478,6 +725,7 @@ fun SettingsScreen(navController: NavHostController) {
         }
     }
 }
+
 
 enum class VisibleSelector {
     NONE,

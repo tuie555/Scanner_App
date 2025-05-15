@@ -46,13 +46,15 @@ suspend fun getProductData(barcode: String): ProductData? = withContext(Dispatch
             val name = product.product_name ?: return@withContext null
             val categories = product.categories ?: return@withContext null
             val imageUrl = product.image_url ?: return@withContext null
-
+            Log.d("ProductData", "Name: $name, Categories: $categories, Image URL: $imageUrl")
             ProductData(
                 barcode = barcode,
                 product_name = name,
                 categories = categories,
                 image_url = imageUrl,
-
+                expiration_date = null,
+                add_day = null,
+                notes = ""
             )
         }
     } catch (e: Exception) {
