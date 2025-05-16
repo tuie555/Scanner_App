@@ -18,7 +18,9 @@ abstract class InventoryDatabase : RoomDatabase() {
                     context.applicationContext,
                     InventoryDatabase::class.java,
                     "inventory_database"
-                ).build()
+                )
+
+                    .build()
                 INSTANCE = instance
                 instance
             }

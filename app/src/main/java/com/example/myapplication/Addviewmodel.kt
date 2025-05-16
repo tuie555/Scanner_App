@@ -9,7 +9,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.myapplication.barcode.getProductData
 import com.example.myapplication.data.ProductData
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class Addviewmodel(private val productDao: ProductDao) : ViewModel()
  {
@@ -67,23 +69,43 @@ class Addviewmodel(private val productDao: ProductDao) : ViewModel()
          onSaved: () -> Unit
      ) {
          viewModelScope.launch {
-             productData = productData?.copy(
-                 product_name = name,
-                 categories = categories,
-                 image_url = imageUrl,
-                 expiration_date = expie_day,
-                 add_day = add_day,
-                 notes = notes
-             )
+             // ถ้า productData ยัง null ให้สร้างใหม่ก่อน
+             if (productData == null) {
+                 productData = ProductData(
+                     barcode = "123454681", // หรือใส่ค่า barcode ที่เหมาะสม
+                     product_name = name,
+                     categories = categories,
+                     image_url = imageUrl,
+                     expiration_date = expie_day,
+                     add_day = add_day,
+                     notes = notes
+                 )
+             } else {
+                 // ถ้ามีแล้ว ก็ copy ค่าใหม่
+                 Log.d("SaveProductDebug", "productData is not null, updating")
+                 productData = productData?.copy(
+                     product_name = name,
+                     categories = categories,
+                     image_url = imageUrl,
+                     expiration_date = expie_day,
+                     add_day = add_day,
+                     notes = notes
+                 )
+             }
 
-             Log.d("SaveProduct", "productData before let: $productData")
-             productData?.let {
-                 Log.d("SaveProduct", "Saving product: $it")
-                 productDao.insertProduct(it)
-                 onSaved()
+
+             try {
+                 productData?.let {
+                     Log.d("SaveProductDebug", "Calling insertProduct()")
+                         productDao.insertProduct(it)
+                     Log.d("SaveProductDebug", "Insert completed")
+                     onSaved()
+                 } ?: Log.d("SaveProductDebug", "productData is STILL null")
+             } catch (e: Exception) {
+                 Log.e("SaveProductError", "Error inserting product", e)
              }
          }
-     }
+    }
 
 
 

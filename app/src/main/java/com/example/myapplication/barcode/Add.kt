@@ -242,20 +242,20 @@ fun saveProductIfValid(
         Toast.makeText(context, "Invalid date format", Toast.LENGTH_SHORT).show()
         return
     }
-
+    Log.d("SaveProduct3", "Saving: $name, $categories,$notes")
     viewModel.saveProduct(
         name = name,
         categories = categories,
         imageUrl = imageUrl,
         add_day = addDayMillis,
         expie_day = expirationMillis,
-        notes = notes
-    ) {
+        notes = notes,
+        onSaved = {
+            Toast.makeText(context, "Product saved successfully", Toast.LENGTH_SHORT).show()
+            Log.d("SaveProduct3", "Saving: $name, $categories,$notes")
+        }
+    )
 
-        Toast.makeText(context, "Product saved successfully", Toast.LENGTH_SHORT).show()
-    }
-
-    Log.d("SaveProduct", "Saving: $name, $categories")
 }
 
 @Composable
@@ -290,7 +290,7 @@ fun CenterAlignedTopAppBarExample(
                         fontSize = 18.sp,
 
                         modifier = Modifier.clickable {
-                            Log.d("DEBUG", "Done button clicked")
+                            Log.d("DEBUG", "Done button clicked", )
                             saveProductIfValid(
                                 viewModel = viewModel,
                                 name = name,
@@ -301,6 +301,8 @@ fun CenterAlignedTopAppBarExample(
                                 notes = notes,
                                 context = context
                             )
+                            Log.d("SAVE_CALL", "Triggered saveProductIfValid")
+
                         }
                     )
 
