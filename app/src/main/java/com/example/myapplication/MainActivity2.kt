@@ -69,6 +69,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import coil.compose.rememberAsyncImagePainter
 import com.example.myapplication.barcode.Add
+import com.example.myapplication.barcode.Scanner
 
 
 class MainActivity2 : ComponentActivity() {
@@ -80,16 +81,7 @@ class MainActivity2 : ComponentActivity() {
         val imageUrl: String
     )
 
-    private val products = listOf(
-        Product("Fruit", "Apple", "Expired in 1 week", "https://storage.googleapis.com/a1aa/image/b987ba44-85d4-499b-caeb-87c5c041da66.jpg"),
-        Product("Meat", "Bacon Sliced", "Expired in 1 week", "https://storage.googleapis.com/a1aa/image/a9f8b17b-2140-446c-ee34-e83f3c1c285d.jpg"),
-        Product("Fruit", "Banana", "Expired in 2 days", "https://storage.googleapis.com/a1aa/image/018fdce6-d1c2-4a69-8364-130f2260c763.jpg"),
-        Product("Dairy", "Goat Milk", "Expired in 2 days", "https://storage.googleapis.com/a1aa/image/b1023918-3585-4326-2eda-05892c52270c.jpg"),
-        Product("Dairy", "Goat Milk from...", "Expired in 1 week", "https://storage.googleapis.com/a1aa/image/01318380-84d1-4c6a-ffad-5f34d8184585.jpg"),
-        Product("Meat", "Human Meat", "Expired in 1 day", "https://storage.googleapis.com/a1aa/image/6d347f5c-9493-4632-cd10-267ad1a4269c.jpg"),
-        Product("Meat", "Monkey Meat", "", "https://storage.googleapis.com/a1aa/image/ea400dba-9b4b-448d-be0e-5ba7b8a31932.jpg"),
-        Product("Meat", "Chai's Leg", "", "https://storage.googleapis.com/a1aa/image/529651aa-15bf-49ce-f0d0-9bd8793cd9fa.jpg")
-    )
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
 
@@ -353,7 +345,7 @@ fun BottomBar(navController: NavHostController,isSettingsScreen: Boolean,
                 .size(width = 100.dp, height = 60.dp) // Set width and height for oval shape
                 .clip(RoundedCornerShape(28.dp)) // Use RoundedCornerShape to create an oval
                 .background(blue400) // Background color
-                .clickable(onClick = { context.startActivity(Intent(context, Add::class.java)) }), // Handle click
+                .clickable(onClick = { context.startActivity(Intent(context, Scanner::class.java)) }), // Handle click
             contentAlignment = Alignment.Center // Center the icon
         ) {
 

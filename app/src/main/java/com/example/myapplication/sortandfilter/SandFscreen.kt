@@ -30,8 +30,6 @@ enum class VisibleSelector {
     Added_photo,
     Expiration_Date,
     Product_Name,
-    Category,
-    Added_date
 }
 @Composable
 fun SandFscreen(navController: NavHostController) {
@@ -94,7 +92,7 @@ fun SandFscreen(navController: NavHostController) {
             }
 
             // Repeat Alert (time) และ Select Repeat Alert (time)
-            SettingsItem("Added (day ago):", selectAdded) {
+            SettingsItem("Added:", selectAdded) {
                 visibleSelector = if (visibleSelector == VisibleSelector.Added) VisibleSelector.NONE else VisibleSelector.Added
             }
             AnimatedVisibility(visible = visibleSelector == VisibleSelector.Added) {

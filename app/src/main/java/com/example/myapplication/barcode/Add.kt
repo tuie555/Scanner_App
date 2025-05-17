@@ -4,7 +4,9 @@ package com.example.myapplication.barcode;
 
 import AddViewModelFactory
 import InventoryDatabase
+import android.app.Activity
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
@@ -53,10 +55,12 @@ import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -74,6 +78,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import coil.compose.rememberAsyncImagePainter
 import com.example.myapplication.Addviewmodel
+import com.example.myapplication.MainActivity2
 import com.example.myapplication.setting.components.OptionSelector
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -243,8 +248,10 @@ fun saveProductIfValid(
     addDay: String?,
     expirationDate: String?,
     notes: String,
-    context: Context
-) {
+    context: Context,
+    onComplete: () -> Unit
+)
+{
     if (addDay.isNullOrEmpty() || expirationDate.isNullOrEmpty()) {
         Toast.makeText(context, "Please select Add Day and Expiration Date", Toast.LENGTH_SHORT).show()
         return
@@ -270,7 +277,7 @@ fun saveProductIfValid(
         notes = notes,
         onSaved = {
             Toast.makeText(context, "Product saved successfully", Toast.LENGTH_SHORT).show()
-            Log.d("SaveProduct3", "Saved: $name, $categories, $notes")
+            onComplete()
         }
     )
 }
@@ -289,7 +296,9 @@ fun CenterAlignedTopAppBarExample(
     context: Context
 ) {
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
-
+    val context1 = LocalContext.current
+    val activity = context1 as? Activity
+    val coroutineScope = rememberCoroutineScope()
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -309,18 +318,24 @@ fun CenterAlignedTopAppBarExample(
                         fontSize = 18.sp,
                         modifier = Modifier.clickable {
                             Log.d("DEBUG", "Done button clicked")
-                            saveProductIfValid(
-                                viewModel = viewModel,
-                                barcode = barcode, // ✅ ส่งเข้าไปด้วย
-                                name = name,
-                                categories = categories,
-                                imageUrl = imageUrl,
-                                addDay = addDay,
-                                expirationDate = expirationDate,
-                                notes = notes,
-                                context = context
-                            )
-                            Log.d("SAVE_CALL", "Triggered saveProductIfValid")
+                            coroutineScope.launch {
+                                saveProductIfValid(
+                                    viewModel = viewModel,
+                                    barcode = barcode,
+                                    name = name,
+                                    categories = categories,
+                                    imageUrl = imageUrl,
+                                    addDay = addDay,
+                                    expirationDate = expirationDate,
+                                    notes = notes,
+                                    context = context,
+                                    onComplete = {
+                                        Log.d("NAVIGATION", "Navigating to MainActivity2")
+                                        activity?.startActivity(Intent(activity, MainActivity2::class.java))
+                                        activity?.finish()
+                                    }
+                                )
+                            }
                         }
                     )
                 },
@@ -745,6 +760,7 @@ fun SettingsScreenadd(
         }
     }
 }
+
 
 
 enum class VisibleSelector {

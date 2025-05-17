@@ -9,13 +9,16 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.myapplication.barcode.getProductData
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class Addviewmodel(private val productDao: ProductDao) : ViewModel() {
 
     var productData by mutableStateOf<ProductData?>(null)
     var isManualEntry by mutableStateOf(false)
-
+    private val _saveCompleted = MutableStateFlow(false)
+    val saveCompleted = _saveCompleted.asStateFlow()
     // โหลดข้อมูลจาก barcode
     fun loadProduct(barcode: String) {
         viewModelScope.launch {
@@ -93,14 +96,18 @@ class Addviewmodel(private val productDao: ProductDao) : ViewModel() {
 
             try {
                 productData?.let {
-                    Log.d("SaveProductDebug", "Calling insertProduct()")
                     productDao.insertProduct(it)
-                    Log.d("SaveProductDebug", "Insert completed")
+                    _saveCompleted.value = true // ✅ Trigger event
                     onSaved()
-                } ?: Log.d("SaveProductDebug", "productData is STILL null")
+                }
             } catch (e: Exception) {
                 Log.e("SaveProductError", "Error inserting product", e)
             }
         }
     }
+
+    fun resetSaveFlag() {
+        _saveCompleted.value = false
+    }
 }
+
