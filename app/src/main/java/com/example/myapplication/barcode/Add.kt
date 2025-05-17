@@ -71,12 +71,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.room.Room
+import androidx.lifecycle.lifecycleScope
 import coil.compose.rememberAsyncImagePainter
 import com.example.myapplication.Addviewmodel
-import com.example.myapplication.data.ProductData
 import com.example.myapplication.setting.components.OptionSelector
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -94,6 +94,12 @@ class Add : ComponentActivity() {
         val productDao = db.productDao()
 
         val factory = AddViewModelFactory(productDao)
+
+        lifecycleScope.launch {
+            val list = productDao.getAllProducts().first()
+            Log.d("DB", "First load: ${list.size} items")
+        }
+
         viewModel = ViewModelProvider(this, factory)[Addviewmodel::class.java] // ✅ Safe initialization
 
         setContent {
@@ -123,28 +129,36 @@ fun ProductScreen(barcode: String, viewModel: Addviewmodel) {
 
     LaunchedEffect(barcode) {
         isLoading = true
+        errorMessage = ""
+        try {
+            val product = getProductData(barcode)
+            Log.d("ProductScreen", "passsss")
+            product?.let {
+                name = it.product_name
+                categories = it.categories
+                imageUrl = it.image_url
+                expirationDate = it.expiration_date?.toDateString() ?: ""
+                addDay = it.add_day?.toDateString() ?: ""
+                notes = it.notes ?: ""
 
-        val product = getProductData(barcode) // Directly call your suspend function here
-
-        product?.let {
-            name = it.product_name
-            categories = it.categories
-            imageUrl = it.image_url
-            expirationDate = it.expiration_date?.toDateString()
-            addDay = it.add_day?.toDateString()
-            notes = it.notes
-
-            Log.d("ProductData", "Name: $name, Categories: $categories, Image URL: $imageUrl")
-        } ?: run {
-            errorMessage = "Product not found or failed to fetch."
+                Log.d("ProductData", "Name: $name, Categories: $categories, Image URL: $imageUrl")
+            }
+                ?: run {
+                errorMessage = "Product not found or failed to fetch."
+            }
+        } catch (e: Exception) {
+            errorMessage = "Error loading product: ${e.message}"
+            Log.e("ProductScreen", "Error loading product", e)
+        } finally {
+            isLoading = false
         }
-
-        isLoading = false
     }
+
 
     // Main UI
     Box(modifier = Modifier.fillMaxSize()) {
         CenterAlignedTopAppBarExample(
+            barcode = barcode, // ✅ เพิ่ม barcode
             name = name,
             categories = categories,
             imageUrl = imageUrl,
@@ -222,6 +236,7 @@ fun String.toEpochMillis(): Long {
 
 fun saveProductIfValid(
     viewModel: Addviewmodel,
+    barcode: String, // ✅ เพิ่ม barcode
     name: String,
     categories: String,
     imageUrl: String,
@@ -242,8 +257,11 @@ fun saveProductIfValid(
         Toast.makeText(context, "Invalid date format", Toast.LENGTH_SHORT).show()
         return
     }
-    Log.d("SaveProduct3", "Saving: $name, $categories,$notes")
+
+    Log.d("SaveProduct3", "Saving: $name, $categories, $notes")
+
     viewModel.saveProduct(
+        barcode = barcode, // ✅ ส่งเข้าไป
         name = name,
         categories = categories,
         imageUrl = imageUrl,
@@ -252,14 +270,15 @@ fun saveProductIfValid(
         notes = notes,
         onSaved = {
             Toast.makeText(context, "Product saved successfully", Toast.LENGTH_SHORT).show()
-            Log.d("SaveProduct3", "Saving: $name, $categories,$notes")
+            Log.d("SaveProduct3", "Saved: $name, $categories, $notes")
         }
     )
-
 }
+
 
 @Composable
 fun CenterAlignedTopAppBarExample(
+    barcode: String, // ✅ เพิ่ม barcode ตรงนี้
     name: String,
     categories: String,
     imageUrl: String,
@@ -288,11 +307,11 @@ fun CenterAlignedTopAppBarExample(
                     Text(
                         text = "Done",
                         fontSize = 18.sp,
-
                         modifier = Modifier.clickable {
-                            Log.d("DEBUG", "Done button clicked", )
+                            Log.d("DEBUG", "Done button clicked")
                             saveProductIfValid(
                                 viewModel = viewModel,
+                                barcode = barcode, // ✅ ส่งเข้าไปด้วย
                                 name = name,
                                 categories = categories,
                                 imageUrl = imageUrl,
@@ -302,10 +321,8 @@ fun CenterAlignedTopAppBarExample(
                                 context = context
                             )
                             Log.d("SAVE_CALL", "Triggered saveProductIfValid")
-
                         }
                     )
-
                 },
                 scrollBehavior = scrollBehavior,
             )
@@ -314,6 +331,7 @@ fun CenterAlignedTopAppBarExample(
         ScrollContent(innerPadding)
     }
 }
+
 
 
 @Composable

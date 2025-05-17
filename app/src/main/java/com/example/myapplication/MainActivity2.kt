@@ -1,4 +1,5 @@
 package com.example.myapplication
+import ProductData
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
@@ -69,8 +70,6 @@ import androidx.navigation.compose.rememberNavController
 import coil.compose.rememberAsyncImagePainter
 import com.example.myapplication.barcode.Add
 
-import com.example.myapplication.data.ProductData
-
 
 class MainActivity2 : ComponentActivity() {
 
@@ -106,6 +105,8 @@ class MainActivity2 : ComponentActivity() {
             val context = LocalContext.current
             val viewmodel:Productviewmodel = viewModel (factory = ViewModelProvider.AndroidViewModelFactory.getInstance(context.applicationContext as android.app.Application))
             val products by viewmodel.productFlow.collectAsState(initial = emptyList())
+
+
             Scaffold(
                 topBar = {
                 if (!isSettingsScreen)   {
