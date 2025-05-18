@@ -1,9 +1,10 @@
+package Databases
+
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import kotlinx.coroutines.flow.Flow
-import com.example.myapplication.data.InspectionData
 
 @Dao
 interface ProductDao {
@@ -22,6 +23,8 @@ interface ProductDao {
 
     @Query("SELECT COUNT(*) FROM inspection_table")
     fun getInspectionCount(): Int
+    @Query("SELECT * FROM product_table")
+    suspend fun getAllProductsOnce(): List<ProductData>
 }
 
 

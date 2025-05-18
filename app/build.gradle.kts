@@ -98,7 +98,7 @@ dependencies {
     implementation("androidx.room:room-runtime:2.7.1")
     implementation("androidx.room:room-ktx:2.7.1")
     ksp("androidx.room:room-compiler:2.7.1")
-    // สำหรับ Ktor client
+    implementation ("androidx.work:work-runtime-ktx:2.9.0")
     implementation("io.ktor:ktor-client-core:2.3.4")
     implementation("io.ktor:ktor-client-cio:2.3.4")
 

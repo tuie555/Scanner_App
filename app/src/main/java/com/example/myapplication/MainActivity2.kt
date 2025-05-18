@@ -1,10 +1,17 @@
 package com.example.myapplication
-import ProductData
+import Databases.Productviewmodel
+import Databases.ProductData
+import Databases.daysUntilExpiry
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -46,7 +53,6 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -63,13 +69,19 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat.getSystemService
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import coil.compose.rememberAsyncImagePainter
-import com.example.myapplication.barcode.Add
 import com.example.myapplication.barcode.Scanner
+import java.time.LocalDate
+import java.time.ZoneId
+import android.util.Log
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 
 
 class MainActivity2 : ComponentActivity() {
@@ -83,8 +95,8 @@ class MainActivity2 : ComponentActivity() {
 
 
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
-
         super.onCreate(savedInstanceState)
 
         setContent {
@@ -95,7 +107,7 @@ class MainActivity2 : ComponentActivity() {
             var searchText by remember { mutableStateOf("") }
             var isFilterScreen by remember { mutableStateOf(false) }
             val context = LocalContext.current
-            val viewmodel:Productviewmodel = viewModel (factory = ViewModelProvider.AndroidViewModelFactory.getInstance(context.applicationContext as android.app.Application))
+            val viewmodel: Productviewmodel = viewModel (factory = ViewModelProvider.AndroidViewModelFactory.getInstance(context.applicationContext as android.app.Application))
             val products by viewmodel.productFlow.collectAsState(initial = emptyList())
 
 
@@ -384,8 +396,5 @@ fun BottomBar(navController: NavHostController,isSettingsScreen: Boolean,
 
         }
     }
-
-
-
 
 

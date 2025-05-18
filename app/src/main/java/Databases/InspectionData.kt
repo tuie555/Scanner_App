@@ -1,6 +1,5 @@
-package com.example.myapplication.data
+package Databases
 
-import ProductData
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
@@ -10,7 +9,7 @@ import androidx.room.PrimaryKey
     tableName = "inspection_table",
     foreignKeys = [ForeignKey(
         entity = ProductData::class,
-        parentColumns = ["id"],            // อ้างอิง Primary Key ของ ProductData
+        parentColumns = ["id"],            // อ้างอิง Primary Key ของ Databases.ProductData
         childColumns = ["product_id"],
         onDelete = ForeignKey.CASCADE
     )]

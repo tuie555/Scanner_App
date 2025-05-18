@@ -2,8 +2,7 @@
 
 package com.example.myapplication.barcode;
 
-import AddViewModelFactory
-import InventoryDatabase
+import Databases.AddViewModelFactory
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
@@ -55,7 +54,6 @@ import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -77,7 +75,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import coil.compose.rememberAsyncImagePainter
-import com.example.myapplication.Addviewmodel
+import Databases.Addviewmodel
 import com.example.myapplication.MainActivity2
 import com.example.myapplication.setting.components.OptionSelector
 import kotlinx.coroutines.flow.first
@@ -146,7 +144,7 @@ fun ProductScreen(barcode: String, viewModel: Addviewmodel) {
                 addDay = it.add_day?.toDateString() ?: ""
                 notes = it.notes ?: ""
 
-                Log.d("ProductData", "Name: $name, Categories: $categories, Image URL: $imageUrl")
+                Log.d("Databases.ProductData", "Name: $name, Categories: $categories, Image URL: $imageUrl")
             }
                 ?: run {
                 errorMessage = "Product not found or failed to fetch."
@@ -365,7 +363,7 @@ fun BackButton() {
 
 @Composable
 fun AddPhotoButton(
-    imageUrl: String?, // Initial URL from server/database (the one in ProductScreen's `imageUrl` state)
+    imageUrl: String?, // Initial URL from server/ (the one in ProductScreen's `imageUrl` state)
     currentUri: Uri?,    // The URI of an image newly picked by the user (ProductScreen's `newImageUri` state)
     onImageUriChanged: (Uri?) -> Unit, // Callback to inform ProductScreen when a new image is picked
     modifier: Modifier = Modifier

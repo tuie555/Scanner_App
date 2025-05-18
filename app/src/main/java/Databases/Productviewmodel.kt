@@ -1,7 +1,5 @@
-package com.example.myapplication
+package Databases
 
-import InventoryDatabase
-import ProductData
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import kotlinx.coroutines.flow.Flow

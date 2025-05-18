@@ -1,6 +1,6 @@
 package com.example.myapplication.barcode
 
-import ProductData
+import Databases.ProductData
 import android.util.Log
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -57,7 +57,7 @@ suspend fun getProductData(barcode: String): ProductData? = withContext(Dispatch
             val categories = product.categories ?: "Unknown Categories"
             val imageUrl = product.imageUrl ?: ""
 
-            Log.d("ProductData", "Name: $name, Categories: $categories, Image URL: $imageUrl")
+            Log.d("Databases.ProductData", "Name: $name, Categories: $categories, Image URL: $imageUrl")
 
             return@withContext ProductData(
                 barcode = barcode,
