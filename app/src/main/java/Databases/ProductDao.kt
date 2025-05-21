@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -23,8 +24,17 @@ interface ProductDao {
 
     @Query("SELECT COUNT(*) FROM inspection_table")
     fun getInspectionCount(): Int
+
     @Query("SELECT * FROM product_table")
     suspend fun getAllProductsOnce(): List<ProductData>
+
+    @Query("SELECT * FROM product_table WHERE barcode = :barcode LIMIT 1")
+    suspend fun getProductByBarcode(barcode: String): ProductData?
+
+
+    @Update
+    suspend fun updateProduct(product: ProductData)
+
 }
 
 

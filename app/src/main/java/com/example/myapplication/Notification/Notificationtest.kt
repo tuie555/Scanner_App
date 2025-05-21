@@ -13,8 +13,6 @@ import androidx.core.app.NotificationCompat
 import androidx.lifecycle.lifecycleScope
 import com.example.myapplication.R
 import kotlinx.coroutines.launch
-import java.time.LocalDate
-import java.time.ZoneId
 
 class NotificationTest : AppCompatActivity() {
 
@@ -32,7 +30,6 @@ class NotificationTest : AppCompatActivity() {
         productDao = InventoryDatabase.getDatabase(this).productDao()
 
         checkExpiringProducts() // Check and notify
-
 
     }
 

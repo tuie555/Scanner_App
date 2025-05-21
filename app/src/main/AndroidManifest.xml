@@ -35,7 +35,7 @@
         <activity android:name=".barcode.Scanner" />
         <activity android:name=".barcode.Add" />
         <activity android:name=".Notification.NotificationTest" />
-
+        <activity android:name=".barcode.Edit" />
         <!-- BOOT_COMPLETED Receiver -->
         <receiver
             android:name=".Notification.BootReceiver"

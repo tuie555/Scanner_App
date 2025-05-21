@@ -39,24 +39,40 @@ class Addviewmodel(private val productDao: ProductDao) : ViewModel() {
         }
     }
 
-    // อัปเดตข้อมูลที่ผู้ใช้กรอก
     fun updateProduct(
+        id: Int,
+        barcode: String,
         name: String,
         categories: String,
         imageUrl: String,
         add_day: Long,
         expie_day: Long,
-        notes: String
+        notes: String,
+        onUpdated: () -> Unit,
+        onError: () -> Unit
     ) {
-        productData = productData?.copy(
-            product_name = name,
-            categories = categories,
-            image_url = imageUrl,
-            expiration_date = expie_day,
-            add_day = add_day,
-            notes = notes
-        )
+        viewModelScope.launch {
+            try {
+                val updatedProduct = ProductData(
+                    id = id, // ✅ ใช้ id เดิม
+                    barcode = barcode,
+                    product_name = name,
+                    categories = categories,
+                    image_url = imageUrl,
+                    add_day = add_day,
+                    expiration_date = expie_day,
+                    notes = notes
+                )
+                productDao.updateProduct(updatedProduct)
+                onUpdated()
+            } catch (e: Exception) {
+                e.printStackTrace()
+                onError()
+            }
+        }
     }
+
+
 
     // บันทึกข้อมูลเข้า Room
     fun saveProduct(

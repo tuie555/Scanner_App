@@ -1,14 +1,12 @@
 package com.example.myapplication
 import Databases.Productviewmodel
 import Databases.ProductData
-import Databases.daysUntilExpiry
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
+import android.graphics.BitmapFactory
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.annotation.RequiresApi
@@ -69,19 +67,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.app.NotificationCompat
-import androidx.core.content.ContextCompat.getSystemService
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import coil.compose.rememberAsyncImagePainter
+import com.example.myapplication.barcode.Edit
 import com.example.myapplication.barcode.Scanner
-import java.time.LocalDate
-import java.time.ZoneId
-import android.util.Log
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
+import androidx.compose.ui.graphics.asImageBitmap
 
 
 class MainActivity2 : ComponentActivity() {
@@ -92,8 +85,6 @@ class MainActivity2 : ComponentActivity() {
         val expiry: String,
         val imageUrl: String
     )
-
-
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -147,31 +138,46 @@ fun ProductListScreen(
     val configuration = LocalConfiguration.current
     val screenWidth = configuration.screenWidthDp.dp
     val columnCount = when {
-        screenWidth < 600.dp -> 2 // For small screens
-        screenWidth < 900.dp -> 3 // For medium screens
-        else -> 4 // For large screens
+        screenWidth < 600.dp -> 2
+        screenWidth < 900.dp -> 3
+        else -> 4
     }
+
     val filteredProducts = if (searchText.isEmpty()) {
         products
     } else {
         products.filter {
-            it.product_name.contains(searchText, ignoreCase = true) || it.categories.contains(searchText, ignoreCase = true)
+            it.product_name.contains(searchText, ignoreCase = true) ||
+                    it.categories.contains(searchText, ignoreCase = true)
         }
     }
 
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(columnCount),
-            modifier = Modifier
-                .padding(paddingValues)
-                .padding(horizontal = 12.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            items(filteredProducts) { products ->
-                ProductCard(products)
-            }
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(columnCount),
+        modifier = Modifier
+            .padding(paddingValues)
+            .padding(horizontal = 12.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        items(filteredProducts) { product ->
+            ProductCard(
+                product = product,
+                onClick = {
+                    Log.d("DEBUG", "Clicked ${product.product_name}") // ✅ ตรวจว่า onClick ทำงานไหม
+                    val intent = Intent(navController.context, Edit::class.java)
+                    intent.putExtra("productData", product) // ✅ ส่งข้อมูลไป Edit
+                    navController.context.startActivity(intent) // ✅ สั่งเปิด Activity
+                },
+                onMoreOptionsClick = { selectedProduct ->
+                    Log.d("ProductListScreen", "More options clicked for ${selectedProduct.product_name}")
+                }
+            )
         }
+
     }
+}
+
 
 
 @Composable
@@ -250,7 +256,11 @@ fun TopBar(
 }
 
 @Composable
-fun ProductCard(product: ProductData) {
+fun ProductCard(
+    product: ProductData,
+    onClick: () -> Unit,
+    onMoreOptionsClick: (ProductData) -> Unit
+) {
     Card(
         shape = RoundedCornerShape(10.dp),
         backgroundColor = Color.White,
@@ -258,10 +268,12 @@ fun ProductCard(product: ProductData) {
             .height(180.dp)
             .fillMaxWidth()
             .border(1.dp, Color(0xFFE0E0E0), RoundedCornerShape(10.dp))
-    ) {
-        Column(
-            modifier = Modifier.fillMaxSize()
-        ) {
+            .clickable { onClick() }, // ✅ ใช้ onClick ที่เรารับเข้ามา
+        elevation = 4.dp
+    )
+    {
+        Column(modifier = Modifier.fillMaxSize()) {
+
             Box(
                 modifier = Modifier
                     .padding(8.dp)
@@ -276,19 +288,20 @@ fun ProductCard(product: ProductData) {
                     fontWeight = FontWeight.Bold
                 )
             }
+
             Box(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth(),
                 contentAlignment = Alignment.Center
             ) {
-                Image(
-                    painter = rememberAsyncImagePainter(product.image_url),
-                    contentDescription = "${product.product_name} image",
-                    modifier = Modifier.size(60.dp),
-                    contentScale = ContentScale.Crop // Changed to Crop for better image filling
-                )
+
+
+                SmartImageLoader(imagePath = product.image_url, modifier = Modifier.size(80.dp))
+
+
             }
+
             Row(
                 modifier = Modifier
                     .background(Color(0xFFBBDEFB))
@@ -296,9 +309,7 @@ fun ProductCard(product: ProductData) {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Column(
-                    modifier = Modifier.weight(1f)
-                ) {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = product.product_name,
                         fontWeight = FontWeight.Bold,
@@ -307,10 +318,10 @@ fun ProductCard(product: ProductData) {
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
-
                 }
+
                 IconButton(
-                    onClick = { /* More options */ },
+                    onClick = { onMoreOptionsClick(product) }, // ✅ ส่ง product กลับ
                     modifier = Modifier.size(28.dp)
                 ) {
                     Icon(
@@ -319,6 +330,54 @@ fun ProductCard(product: ProductData) {
                         tint = Color.Black
                     )
                 }
+            }
+        }
+    }
+}
+@Composable
+fun SmartImageLoader(imagePath: String, modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+
+    when {
+        imagePath.startsWith("http") -> {
+            // โหลดจากเว็บ (URL)
+            Image(
+                painter = rememberAsyncImagePainter(imagePath),
+                contentDescription = "Image from web",
+                modifier = modifier,
+                contentScale = ContentScale.Crop
+            )
+        }
+
+        imagePath.startsWith("content://") -> {
+            // โหลดจาก URI (ในเครื่อง)
+            val uri = remember(imagePath) { Uri.parse(imagePath) }
+            val bitmap = remember(uri) {
+                try {
+                    context.contentResolver.openInputStream(uri)?.use {
+                        BitmapFactory.decodeStream(it)
+                    }
+                } catch (e: Exception) {
+                    null
+                }
+            }
+
+            bitmap?.let {
+                Image(
+                    bitmap = it.asImageBitmap(),
+                    contentDescription = "Local image",
+                    modifier = modifier,
+                    contentScale = ContentScale.Crop
+                )
+            } ?: Box(modifier.background(Color.Gray)) {
+                Text("โหลดรูปไม่ได้", color = Color.White, modifier = Modifier.padding(8.dp))
+            }
+        }
+
+        else -> {
+            // ไม่รู้จักฟอร์แมต
+            Box(modifier.background(Color.LightGray)) {
+                Text("ไม่รองรับ", color = Color.Red, modifier = Modifier.padding(8.dp))
             }
         }
     }

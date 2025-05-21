@@ -4,6 +4,7 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import java.io.Serializable
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
@@ -21,7 +22,7 @@ data class ProductData(
     val expiration_date: Long?,
     val add_day: Long?,
     val notes: String
-)
+) : Serializable // ✅ เพิ่มตรงนี้
 
 @RequiresApi(Build.VERSION_CODES.O)
 fun ProductData.daysUntilExpiry(): Long? {

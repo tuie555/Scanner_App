@@ -114,7 +114,7 @@ dependencies {
 // สำหรับ JSON และ ContentNegotiation
     implementation("io.ktor:ktor-client-content-negotiation:2.3.4")
     implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.4")
-
+    implementation ("androidx.compose.material3:material3:1.2.0")
 // Kotlinx serialization
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.1")
 
