@@ -3,10 +3,10 @@ name: SonarCloud
 on:
   push:
     branches:
-      - master
+      - fix_Error_insert_data
   pull_request:
     branches:
-      - master
+      - fix_Error_insert_data
 
 jobs:
   build:
