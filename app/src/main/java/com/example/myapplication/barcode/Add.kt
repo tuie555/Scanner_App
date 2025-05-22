@@ -76,7 +76,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import coil.compose.rememberAsyncImagePainter
 import Databases.Addviewmodel
-import androidx.compose.foundation.layout.RowScope
+import androidx.compose.material3.IconButton
 import com.example.myapplication.MainActivity2
 import com.example.myapplication.setting.components.OptionSelector
 import kotlinx.coroutines.flow.first
@@ -171,7 +171,11 @@ fun ProductScreen(barcode: String, viewModel: Addviewmodel) {
             expirationDate = expirationDate,
             notes = notes,
             viewModel = viewModel,
-            context = context
+            context = context,
+            onBackClick = {
+                val intent = Intent(context, MainActivity2::class.java)
+                context.startActivity(intent)}
+
         )
 
 
@@ -307,7 +311,8 @@ fun CenterAlignedTopAppBarExample(
     expirationDate: String?,
     notes: String,
     viewModel: Addviewmodel,
-    context: Context
+    context: Context,
+    onBackClick: () -> Unit
 ) {
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
     val context1 = LocalContext.current
@@ -316,12 +321,16 @@ fun CenterAlignedTopAppBarExample(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
+
                 title = {
                     Text(
                         text = "Enter Product Information",
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
+                },
+                navigationIcon = {
+                    BackButton(onBackClick) // 👈 ใส่ BackButton ที่นี่
                 },
                 actions = {
                     Text(
@@ -376,16 +385,22 @@ fun CenterAlignedTopAppBarExample(
 
 
 @Composable
-fun BackButton() {
+fun BackButton(onBackClick: () -> Unit) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .clickable { }
             .padding(start = 16.dp)
     ) {
-        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", modifier = Modifier.size(20.dp))
-        Spacer(modifier = Modifier.width(4.dp))
-        Text(text = "Back", fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        IconButton(onClick = onBackClick) {
+            Icon(
+                Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = "Back",
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(text = "Back", fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
     }
 }
 

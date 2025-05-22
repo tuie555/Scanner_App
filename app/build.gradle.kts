@@ -57,6 +57,10 @@ android {
         }
     }
 
+    lint {
+        xmlReport = true
+        xmlOutput = layout.buildDirectory.file("reports/lint-results.xml").get().asFile
+    }
 
 }
 
