@@ -30,7 +30,12 @@ fun NavigationGraph(navController: NavHostController, products: List<ProductData
             )
         }
 
-        composable("Sorting and Filter") { SandFscreen(navController) }
+        composable("Sorting and Filter") {
+            val context = LocalContext.current
+            val database = InventoryDatabase.getDatabase(context)
+            val productDao = database.productDao()
+            SandFscreen(navController, productDao)
+        }
     }
 }
 

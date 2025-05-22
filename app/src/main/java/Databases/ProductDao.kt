@@ -31,7 +31,20 @@ interface ProductDao {
     @Query("SELECT * FROM product_table WHERE barcode = :barcode LIMIT 1")
     suspend fun getProductByBarcode(barcode: String): ProductData?
 
+    @Query("SELECT DISTINCT categories FROM product_table")
+    fun getAllCategories(): Flow<List<String>>
 
+    @Query("SELECT * FROM product_table WHERE image_url IS NOT NULL")
+    fun getWithPhotos(): Flow<List<ProductData>>
+
+    @Query("SELECT * FROM product_table WHERE image_url IS NULL")
+    fun getWithoutPhotos(): Flow<List<ProductData>>
+
+    // ดึงวันหมดอายุทั้งหมด (ใช้ในกรณีทำ ExpiredIn ได้เอง)
+    @Query("SELECT expiration_date FROM product_table")
+    fun getAllExpirationDates(): Flow<List<Long>>
+    @Query("SELECT add_day FROM product_table")
+    fun getAllAddedDates(): Flow<List<Long>>
     @Update
     suspend fun updateProduct(product: ProductData)
 

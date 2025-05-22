@@ -1,5 +1,7 @@
 package com.example.myapplication.sortandfilter
 
+import Databases.ProductDao
+import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -8,7 +10,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -17,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.myapplication.setting.components.OptionSelector
 import com.example.myapplication.setting.components.SettingsItem
@@ -32,14 +38,20 @@ enum class VisibleSelector {
     Product_Name,
 }
 @Composable
-fun SandFscreen(navController: NavHostController) {
+fun SandFscreen(navController: NavHostController,dao: ProductDao) {
+
+    val viewModel: FilterViewModel = viewModel(
+        factory = FilterViewModelFactory(dao)
+    )
+
+
     var visibleSelector by remember { mutableStateOf(VisibleSelector.NONE) }
-    var selectedCategory by remember { mutableStateOf(emptyList<String>()) }
-    var selectedExpiredIn by remember { mutableStateOf(emptyList<String>()) }
-    var selectedAdded by remember { mutableStateOf(emptyList<String>()) }
-    var selectedAddedPhoto by remember { mutableStateOf(emptyList<String>()) }
-    var selectedExpirationDate by remember { mutableStateOf(emptyList<String>()) }
-    var Productname by remember { mutableStateOf("") }
+    val selectedCategory by viewModel.selectedCategory.collectAsState()
+    val selectedExpiredIn by viewModel.selectedExpiredIn.collectAsState()
+    val selectedAdded by viewModel.selectedAdded.collectAsState()
+    val selectedAddedPhoto by viewModel.selectedAddedPhoto.collectAsState()
+    val selectedExpirationDate by viewModel.selectedExpirationDate.collectAsState()
+    val productName by viewModel.productName.collectAsState()
 
     val selectCategory =  selectedCategory.joinToString ( ", " )
     val selectExpiredIn = selectedExpiredIn.joinToString ( ", " )
@@ -49,11 +61,26 @@ fun SandFscreen(navController: NavHostController) {
 
 
 
-    val CategoryOptions = listOf("Dairy", "Meat", "Vegetable", "fruit", "Frozen", "Still Water", "Soda")
-    val ExpiredInOptions = listOf("Expired in 1 day", "Expired in 2 days", "Expired in 3 days", "4day", "5day", "1 week", "2 week", "3 week", "4 week", "1 month", "2 month", "3 month", "6 month")
-    val AddedOptions = listOf("Expired in 1 day", "Expired in 2 days", "Expired in 3 days", "4day", "5day", "1 week", "2 week", "3 week", "4 week", "1 month", "2 month", "3 month", "6 month")
-    val AddedPhotoOptions = listOf("Added Photo ", "NO Photo ")
-    val ExpirationDateOptions = listOf("Ascending", "Descending")
+    val categories by viewModel.allCategories.collectAsState()
+    val productsWithPhoto by viewModel.allProductsWithPhotos.collectAsState()
+    val productsWithoutPhoto by viewModel.allProductsWithoutPhotos.collectAsState()
+    val expirationDates by viewModel.allExpirationDates.collectAsState()
+    val addedDates by viewModel.allAddedDates.collectAsState()
+    val AddedPhotoOptions = listOfNotNull(
+        if (productsWithPhoto.isNotEmpty()) "Added Photo" else null,
+        if (productsWithoutPhoto.isNotEmpty()) "NO Photo" else null
+    )
+
+    val ExpiredInOptions = expirationDates.map { date ->
+        // ประมวลผลวันที่ให้เป็น "เหลืออีก ... วัน"
+        val daysLeft = (date - System.currentTimeMillis()) / (1000 * 60 * 60 * 24)
+        "Expired in $daysLeft day(s)"
+    }
+    val AddedOptions = addedDates.map { date ->
+        val daysAgo = ((System.currentTimeMillis() - date) / (1000 * 60 * 60 * 24)).toInt()
+        "Added $daysAgo day(s) ago"
+    }
+
     val scrollState = rememberScrollState()
 
     Column(
@@ -75,79 +102,82 @@ fun SandFscreen(navController: NavHostController) {
             SettingsItem("Category:", selectCategory) {
                 visibleSelector = if (visibleSelector == VisibleSelector.CATEGORY) VisibleSelector.NONE else VisibleSelector.CATEGORY
             }
-            AnimatedVisibility(visible = visibleSelector == VisibleSelector.CATEGORY) {
-                OptionSelector("Category:", CategoryOptions, selectedCategory) { option ->
-                    selectedCategory = if (option in selectedCategory) selectedCategory - option else selectedCategory + option
+            AnimatedVisibility(visibleSelector == VisibleSelector.CATEGORY) {
+                OptionSelector("Category:", categories, selectedCategory) { option ->
+                    val newSelection = if (option in selectedCategory) selectedCategory - option else selectedCategory + option
+                    viewModel.setSelectedCategory(newSelection)
                 }
             }
 
-            // Alert Mode และ Select Alert Mode
             SettingsItem("Expired in:", selectExpiredIn) {
                 visibleSelector = if (visibleSelector == VisibleSelector.Expired_in) VisibleSelector.NONE else VisibleSelector.Expired_in
             }
-            AnimatedVisibility(visible = visibleSelector == VisibleSelector.Expired_in) {
+            AnimatedVisibility(visibleSelector == VisibleSelector.Expired_in) {
                 SingleOptionSelector("Select Alert Mode:", ExpiredInOptions, selectedExpiredIn.firstOrNull() ?: "") {
-                    selectedExpiredIn = listOf(it)
+                    viewModel.setSelectedExpiredIn(listOf(it))
                 }
             }
 
-            // Repeat Alert (time) และ Select Repeat Alert (time)
             SettingsItem("Added:", selectAdded) {
                 visibleSelector = if (visibleSelector == VisibleSelector.Added) VisibleSelector.NONE else VisibleSelector.Added
             }
-            AnimatedVisibility(visible = visibleSelector == VisibleSelector.Added) {
+            AnimatedVisibility(visibleSelector == VisibleSelector.Added) {
                 SingleOptionSelector("Select Repeat Alert (time):", AddedOptions, selectedAdded.firstOrNull() ?: "") {
-                    selectedAdded = listOf(it)
+                    viewModel.setSelectedAdded(listOf(it))
                 }
             }
-            // Added Photo
+
             SettingsItem("Added Photo:", selectAddedPhoto) {
                 visibleSelector = if (visibleSelector == VisibleSelector.Added_photo) VisibleSelector.NONE else VisibleSelector.Added_photo
             }
-            AnimatedVisibility(visible = visibleSelector == VisibleSelector.Added_photo) {
+            AnimatedVisibility(visibleSelector == VisibleSelector.Added_photo) {
                 SingleOptionSelector("Select Added Photo:", AddedPhotoOptions, selectedAddedPhoto.firstOrNull() ?: "") {
-                    selectedAddedPhoto = listOf(it)
+                    viewModel.setSelectedAddedPhoto(listOf(it))
                 }
             }
 
-
-
-
             Spacer(modifier = Modifier.height(32.dp))
-            androidx.compose.material3.Text(
-                "Sort by:",
-                fontWeight = FontWeight.Bold,
-                fontSize = 20.sp
-            )
-            // Expiration Date
+            Text("Sort by:", fontWeight = FontWeight.Bold, fontSize = 20.sp)
+
             SettingsItem("Expiration Date:", selectExpirationDate) {
                 visibleSelector = if (visibleSelector == VisibleSelector.Expiration_Date) VisibleSelector.NONE else VisibleSelector.Expiration_Date
             }
-            AnimatedVisibility(visible = visibleSelector == VisibleSelector.Expiration_Date) {
-                SingleOptionSelector("Select Expiration Date:", ExpirationDateOptions, selectedExpirationDate.firstOrNull() ?: "") {
-                    selectedExpirationDate = listOf(it)
+            AnimatedVisibility(visibleSelector == VisibleSelector.Expiration_Date) {
+                SingleOptionSelector("Select Expiration Date:", ExpiredInOptions, selectedExpirationDate.firstOrNull() ?: "") {
+                    viewModel.setSelectedExpirationDate(listOf(it))
                 }
             }
 
-// Product Name
-            ProductNameSettingItem(
-                label = "Product Name:",
-                productName = Productname,
-                onProductNameChange = { Productname = it },
-                isVisible = visibleSelector == VisibleSelector.Product_Name,
-                onToggleVisible = {
-                    visibleSelector = if (visibleSelector == VisibleSelector.Product_Name) {
-                        VisibleSelector.NONE
-                    } else {
-                        VisibleSelector.Product_Name
-                    }
-                }
-            )
+            LaunchedEffect(categories) {
+                println("📦 All Categories:")
+                val rawString = "ข้อความภาษาไทย: น้ำอัดลม, ขนม, โคล่า"
+                val decoded = java.net.URLDecoder.decode(rawString, "UTF-8")
+                Log.d("TEST", decoded)
 
+
+                categories.forEach { println("  • $it") }
+            }
+
+            AnimatedVisibility(visibleSelector == VisibleSelector.CATEGORY) {
+                OptionSelector("Category:", categories, selectedCategory) { option ->
+                    val newSelection = if (option in selectedCategory) {
+                        selectedCategory - option
+                    } else {
+                        selectedCategory + option
+                    }
+
+                    // 🔽 DEBUG: แสดงการคลิกเลือก
+                    println("🔘 Clicked: $option")
+                    println("📌 New Selection: $newSelection")
+
+                    viewModel.setSelectedCategory(newSelection)
+                }
+        }
+    }
 
     }
 }
-}
+
 
 
 
