@@ -123,5 +123,11 @@ class Addviewmodel(private val productDao: ProductDao) : ViewModel() {
     fun resetSaveFlag() {
         _saveCompleted.value = false
     }
+    fun deleteProductById(productId: Int) {
+        viewModelScope.launch {
+            productDao.deleteById(productId)
+        }
+    }
+
 }
 

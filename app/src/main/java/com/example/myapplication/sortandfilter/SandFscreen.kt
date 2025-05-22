@@ -37,49 +37,54 @@ enum class VisibleSelector {
     Expiration_Date,
     Product_Name,
 }
+// SandFscreen.kt
 @Composable
-fun SandFscreen(navController: NavHostController,dao: ProductDao) {
-
-    val viewModel: FilterViewModel = viewModel(
-        factory = FilterViewModelFactory(dao)
-    )
-
-
+fun SandFscreen(
+    navController: NavHostController,
+    dao: ProductDao,
+    filterViewModel: FilterViewModel
+) {
     var visibleSelector by remember { mutableStateOf(VisibleSelector.NONE) }
-    val selectedCategory by viewModel.selectedCategory.collectAsState()
-    val selectedExpiredIn by viewModel.selectedExpiredIn.collectAsState()
-    val selectedAdded by viewModel.selectedAdded.collectAsState()
-    val selectedAddedPhoto by viewModel.selectedAddedPhoto.collectAsState()
-    val selectedExpirationDate by viewModel.selectedExpirationDate.collectAsState()
-    val productName by viewModel.productName.collectAsState()
 
-    val selectCategory =  selectedCategory.joinToString ( ", " )
-    val selectExpiredIn = selectedExpiredIn.joinToString ( ", " )
-    val selectAdded = selectedAdded.joinToString ( ", " )
-    val selectAddedPhoto = selectedAddedPhoto.joinToString ( ", " )
-    val selectExpirationDate = selectedExpirationDate.joinToString ( ", " )
+    val selectedCategory by filterViewModel.selectedCategory.collectAsState()
+    val selectedExpiredIn by filterViewModel.selectedExpiredIn.collectAsState()
+    val selectedAdded by filterViewModel.selectedAdded.collectAsState()
+    val selectedAddedPhoto by filterViewModel.selectedAddedPhoto.collectAsState()
+    val selectedExpirationDate by filterViewModel.selectedExpirationDate.collectAsState()
+    val productName by filterViewModel.productName.collectAsState()
 
+    val selectCategory = selectedCategory.joinToString(", ")
+    val selectExpiredIn = selectedExpiredIn.joinToString(", ")
+    val selectAdded = selectedAdded.joinToString(", ")
+    val selectAddedPhoto = selectedAddedPhoto.joinToString(", ")
+    val selectExpirationDate = selectedExpirationDate.joinToString(", ")
 
+    val categories by filterViewModel.allCategories.collectAsState()
+    val productsWithPhoto by filterViewModel.allProductsWithPhotos.collectAsState()
+    val productsWithoutPhoto by filterViewModel.allProductsWithoutPhotos.collectAsState()
+    val expirationDates by filterViewModel.allExpirationDates.collectAsState()
+    val addedDates by filterViewModel.allAddedDates.collectAsState()
 
-    val categories by viewModel.allCategories.collectAsState()
-    val productsWithPhoto by viewModel.allProductsWithPhotos.collectAsState()
-    val productsWithoutPhoto by viewModel.allProductsWithoutPhotos.collectAsState()
-    val expirationDates by viewModel.allExpirationDates.collectAsState()
-    val addedDates by viewModel.allAddedDates.collectAsState()
     val AddedPhotoOptions = listOfNotNull(
         if (productsWithPhoto.isNotEmpty()) "Added Photo" else null,
         if (productsWithoutPhoto.isNotEmpty()) "NO Photo" else null
     )
 
     val ExpiredInOptions = expirationDates.map { date ->
-        // ประมวลผลวันที่ให้เป็น "เหลืออีก ... วัน"
         val daysLeft = (date - System.currentTimeMillis()) / (1000 * 60 * 60 * 24)
         "Expired in $daysLeft day(s)"
     }
-    val AddedOptions = addedDates.map { date ->
-        val daysAgo = ((System.currentTimeMillis() - date) / (1000 * 60 * 60 * 24)).toInt()
-        "Added $daysAgo day(s) ago"
-    }
+    val AddedOptions = addedDates
+        .filter { date ->
+            // คำนวณวันที่เพิ่มจนถึงปัจจุบัน ต้องมากกว่า 1 วัน (ในรูปของ millis)
+            val daysAgo = (System.currentTimeMillis() - date) / (1000 * 60 * 60 * 24)
+            daysAgo >= 1
+        }
+        .map { date ->
+            val daysAgo = ((System.currentTimeMillis() - date) / (1000 * 60 * 60 * 24)).toInt()
+            "Added $daysAgo day(s) ago"
+        }
+
 
     val scrollState = rememberScrollState()
 
@@ -89,7 +94,6 @@ fun SandFscreen(navController: NavHostController,dao: ProductDao) {
             .padding(16.dp)
             .verticalScroll(scrollState)
     ) {
-
         Column(modifier = Modifier.fillMaxSize()) {
             androidx.compose.material3.Text(
                 "Filter by:",
@@ -98,14 +102,13 @@ fun SandFscreen(navController: NavHostController,dao: ProductDao) {
             )
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Alert before expired และ Select Alert before expired
             SettingsItem("Category:", selectCategory) {
                 visibleSelector = if (visibleSelector == VisibleSelector.CATEGORY) VisibleSelector.NONE else VisibleSelector.CATEGORY
             }
             AnimatedVisibility(visibleSelector == VisibleSelector.CATEGORY) {
                 OptionSelector("Category:", categories, selectedCategory) { option ->
                     val newSelection = if (option in selectedCategory) selectedCategory - option else selectedCategory + option
-                    viewModel.setSelectedCategory(newSelection)
+                    filterViewModel.setSelectedCategory(newSelection)
                 }
             }
 
@@ -114,7 +117,7 @@ fun SandFscreen(navController: NavHostController,dao: ProductDao) {
             }
             AnimatedVisibility(visibleSelector == VisibleSelector.Expired_in) {
                 SingleOptionSelector("Select Alert Mode:", ExpiredInOptions, selectedExpiredIn.firstOrNull() ?: "") {
-                    viewModel.setSelectedExpiredIn(listOf(it))
+                    filterViewModel.setSelectedExpiredIn(listOf(it))
                 }
             }
 
@@ -123,7 +126,7 @@ fun SandFscreen(navController: NavHostController,dao: ProductDao) {
             }
             AnimatedVisibility(visibleSelector == VisibleSelector.Added) {
                 SingleOptionSelector("Select Repeat Alert (time):", AddedOptions, selectedAdded.firstOrNull() ?: "") {
-                    viewModel.setSelectedAdded(listOf(it))
+                    filterViewModel.setSelectedAdded(listOf(it))
                 }
             }
 
@@ -132,7 +135,7 @@ fun SandFscreen(navController: NavHostController,dao: ProductDao) {
             }
             AnimatedVisibility(visibleSelector == VisibleSelector.Added_photo) {
                 SingleOptionSelector("Select Added Photo:", AddedPhotoOptions, selectedAddedPhoto.firstOrNull() ?: "") {
-                    viewModel.setSelectedAddedPhoto(listOf(it))
+                    filterViewModel.setSelectedAddedPhoto(listOf(it))
                 }
             }
 
@@ -144,39 +147,13 @@ fun SandFscreen(navController: NavHostController,dao: ProductDao) {
             }
             AnimatedVisibility(visibleSelector == VisibleSelector.Expiration_Date) {
                 SingleOptionSelector("Select Expiration Date:", ExpiredInOptions, selectedExpirationDate.firstOrNull() ?: "") {
-                    viewModel.setSelectedExpirationDate(listOf(it))
+                    filterViewModel.setSelectedExpirationDate(listOf(it))
                 }
             }
-
-            LaunchedEffect(categories) {
-                println("📦 All Categories:")
-                val rawString = "ข้อความภาษาไทย: น้ำอัดลม, ขนม, โคล่า"
-                val decoded = java.net.URLDecoder.decode(rawString, "UTF-8")
-                Log.d("TEST", decoded)
-
-
-                categories.forEach { println("  • $it") }
-            }
-
-            AnimatedVisibility(visibleSelector == VisibleSelector.CATEGORY) {
-                OptionSelector("Category:", categories, selectedCategory) { option ->
-                    val newSelection = if (option in selectedCategory) {
-                        selectedCategory - option
-                    } else {
-                        selectedCategory + option
-                    }
-
-                    // 🔽 DEBUG: แสดงการคลิกเลือก
-                    println("🔘 Clicked: $option")
-                    println("📌 New Selection: $newSelection")
-
-                    viewModel.setSelectedCategory(newSelection)
-                }
         }
     }
-
-    }
 }
+
 
 
 

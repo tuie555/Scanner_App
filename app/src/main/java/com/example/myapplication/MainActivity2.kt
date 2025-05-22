@@ -51,6 +51,7 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -75,16 +76,12 @@ import coil.compose.rememberAsyncImagePainter
 import com.example.myapplication.barcode.Edit
 import com.example.myapplication.barcode.Scanner
 import androidx.compose.ui.graphics.asImageBitmap
+import com.example.myapplication.sortandfilter.FilterViewModel
+import com.example.myapplication.sortandfilter.FilterViewModelFactory
 
 
 class MainActivity2 : ComponentActivity() {
 
-    data class Product(
-        val category: String,
-        val name: String,
-        val expiry: String,
-        val imageUrl: String
-    )
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -100,7 +97,14 @@ class MainActivity2 : ComponentActivity() {
             val context = LocalContext.current
             val viewmodel: Productviewmodel = viewModel (factory = ViewModelProvider.AndroidViewModelFactory.getInstance(context.applicationContext as android.app.Application))
             val products by viewmodel.productFlow.collectAsState(initial = emptyList())
-
+            val database = InventoryDatabase.getDatabase(context)
+            val productDao = database.productDao()
+            val filterViewModel: FilterViewModel = viewModel(
+                factory = FilterViewModelFactory(productDao)
+            )
+            LaunchedEffect(searchText) {
+                filterViewModel.setSearchText(searchText)
+            }
 
             Scaffold(
                 topBar = {
@@ -122,7 +126,12 @@ class MainActivity2 : ComponentActivity() {
                     }
                 }
             ) { paddingValues ->
-                NavigationGraph(navController, products, paddingValues, searchText)
+                NavigationGraph(
+                    navController = navController,
+                    paddingValues = paddingValues,
+                    searchText = searchText,
+                    filterViewModel = filterViewModel
+                )
             }
         }
     }
@@ -130,26 +139,18 @@ class MainActivity2 : ComponentActivity() {
 
 @Composable
 fun ProductListScreen(
-    products: List<ProductData>,
     navController: NavHostController,
     paddingValues: PaddingValues,
-    searchText: String
+    viewModel: FilterViewModel
 ) {
+    val filteredProducts by viewModel.filteredProducts.collectAsState()
+
     val configuration = LocalConfiguration.current
     val screenWidth = configuration.screenWidthDp.dp
     val columnCount = when {
         screenWidth < 600.dp -> 2
         screenWidth < 900.dp -> 3
         else -> 4
-    }
-
-    val filteredProducts = if (searchText.isEmpty()) {
-        products
-    } else {
-        products.filter {
-            it.product_name.contains(searchText, ignoreCase = true) ||
-                    it.categories.contains(searchText, ignoreCase = true)
-        }
     }
 
     LazyVerticalGrid(
@@ -164,19 +165,19 @@ fun ProductListScreen(
             ProductCard(
                 product = product,
                 onClick = {
-                    Log.d("DEBUG", "Clicked ${product.product_name}") // ✅ ตรวจว่า onClick ทำงานไหม
+                    Log.d("DEBUG", "Clicked ${product.product_name}")
                     val intent = Intent(navController.context, Edit::class.java)
-                    intent.putExtra("productData", product) // ✅ ส่งข้อมูลไป Edit
-                    navController.context.startActivity(intent) // ✅ สั่งเปิด Activity
+                    intent.putExtra("productData", product)
+                    navController.context.startActivity(intent)
                 },
                 onMoreOptionsClick = { selectedProduct ->
                     Log.d("ProductListScreen", "More options clicked for ${selectedProduct.product_name}")
                 }
             )
         }
-
     }
 }
+
 
 
 
@@ -398,7 +399,7 @@ fun BottomBar(navController: NavHostController,isSettingsScreen: Boolean,
         modifier = Modifier.height(70.dp)
     ) {
         IconButton(
-            onClick = { /* Menu action */ },
+            onClick = { context.startActivity(Intent(context, MainActivity2::class.java)) },
             modifier = Modifier.size(40.dp)
         ) {
             Icon(

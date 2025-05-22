@@ -77,6 +77,12 @@ import androidx.lifecycle.lifecycleScope
 import coil.compose.rememberAsyncImagePainter
 import Databases.Addviewmodel
 import Databases.ProductData
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.ui.text.font.FontWeight
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.rememberNavController
 import coil.request.CachePolicy
 import coil.request.ImageRequest
 import com.example.myapplication.MainActivity2
@@ -102,7 +108,8 @@ class Edit : ComponentActivity() {
         viewModel = ViewModelProvider(this, factory)[Addviewmodel::class.java]
 
         setContent {
-            ProductScreen1(product = product, viewModel = viewModel)
+            val navController = rememberNavController()
+            ProductScreen1(product = product, viewModel = viewModel, navController = navController)
         }
     }
 }
@@ -111,7 +118,7 @@ class Edit : ComponentActivity() {
 
 
 @Composable
-fun ProductScreen1(product: ProductData?, viewModel: Addviewmodel) {
+fun ProductScreen1(product: ProductData?, viewModel: Addviewmodel,navController: NavHostController) {
     if (product == null) {
         Text("No product found")
         return
@@ -184,6 +191,13 @@ fun ProductScreen1(product: ProductData?, viewModel: Addviewmodel) {
                 onValueChange = { notes = it }
             )
 
+            DeleteProductButton(
+
+                    productId = product.id,
+                    viewModel = viewModel,
+                    navController = navController
+
+            )
             Spacer(modifier = Modifier.height(16.dp))
         }
     }
@@ -762,6 +776,30 @@ fun SettingsScreenaddEdit(
                 }
             }
         }
+    }
+}
+@Composable
+fun DeleteProductButton(
+    productId: Int,
+    viewModel: Addviewmodel,
+    navController: NavHostController,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+
+    OutlinedButton(
+        onClick = {
+            viewModel.deleteProductById(productId)
+            Toast.makeText(context, "ลบสินค้าสำเร็จ", Toast.LENGTH_SHORT).show()
+            navController.popBackStack()
+        },
+        modifier = modifier
+            .fillMaxWidth()
+            .height(50.dp),
+        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Red),
+        border = BorderStroke(1.dp, Color.Red)
+    ) {
+        Text("ลบสินค้า", fontWeight = FontWeight.Bold)
     }
 }
 

@@ -101,6 +101,7 @@ dependencies {
     implementation ("androidx.work:work-runtime-ktx:2.9.0")
     implementation("io.ktor:ktor-client-core:2.3.4")
     implementation("io.ktor:ktor-client-cio:2.3.4")
+    implementation(libs.kotlinx.coroutines.core) // หรือใหม่กว่านี้
 
 // สำหรับ JSON และ ContentNegotiation
     implementation("io.ktor:ktor-client-content-negotiation:2.3.4")
