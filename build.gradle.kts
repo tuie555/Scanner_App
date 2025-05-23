@@ -6,16 +6,6 @@ plugins {
     alias(libs.plugins.kotlin.android) apply false
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.compose.compiler) apply false
-    alias(libs.plugins.sonarqube)
-}
-sonar {
-    properties {
-        property("sonar.projectKey", "scannerapp")
-        property("sonar.host.url", "https://sonarcloud.io")
-        property("sonar.token", "sqa_1af153509682d36187a065fd54d34eb8355cd2b1")
-        property("sonar.sourceEncoding", "UTF-8")
-        property("sonar.androidLint.reportPaths", "app/build/reports/lint-results.xml")
-
-    }
+    
 }
 
