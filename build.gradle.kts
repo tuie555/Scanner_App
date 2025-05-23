@@ -11,7 +11,7 @@ plugins {
 sonar {
     properties {
         property("sonar.projectKey", "scannerapp")
-        property("sonar.host.url", "http://localhost:9000")
+        property("sonar.host.url", "https://sonarcloud.io")
         property("sonar.token", "sqa_1af153509682d36187a065fd54d34eb8355cd2b1")
         property("sonar.sourceEncoding", "UTF-8")
         property("sonar.androidLint.reportPaths", "app/build/reports/lint-results.xml")
