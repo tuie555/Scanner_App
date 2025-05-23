@@ -80,7 +80,6 @@ import com.example.myapplication.barcode.Edit
 import com.example.myapplication.barcode.Scanner
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.core.app.NotificationCompat
-import com.example.myapplication.Notification.NotificationTest
 import com.example.myapplication.sortandfilter.FilterViewModel
 import com.example.myapplication.sortandfilter.FilterViewModelFactory
 
