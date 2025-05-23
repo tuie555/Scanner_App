@@ -1,9 +1,15 @@
 package com.example.myapplication
+import Databases.Productviewmodel
+import Databases.ProductData
 import android.content.Intent
+import android.graphics.BitmapFactory
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -46,6 +52,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -61,45 +68,43 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import coil.compose.rememberAsyncImagePainter
+import com.example.myapplication.barcode.Edit
 import com.example.myapplication.barcode.Scanner
-import com.example.myapplication.barcode.getProductData
-import com.example.myapplication.data.ProductData
+import androidx.compose.ui.graphics.asImageBitmap
+import com.example.myapplication.sortandfilter.FilterViewModel
+import com.example.myapplication.sortandfilter.FilterViewModelFactory
 
 
 class MainActivity2 : ComponentActivity() {
 
-    data class Product(
-        val category: String,
-        val name: String,
-        val expiry: String,
-        val imageUrl: String
-    )
 
-    private val products = listOf(
-        Product("Fruit", "Apple", "Expired in 1 week", "https://storage.googleapis.com/a1aa/image/b987ba44-85d4-499b-caeb-87c5c041da66.jpg"),
-        Product("Meat", "Bacon Sliced", "Expired in 1 week", "https://storage.googleapis.com/a1aa/image/a9f8b17b-2140-446c-ee34-e83f3c1c285d.jpg"),
-        Product("Fruit", "Banana", "Expired in 2 days", "https://storage.googleapis.com/a1aa/image/018fdce6-d1c2-4a69-8364-130f2260c763.jpg"),
-        Product("Dairy", "Goat Milk", "Expired in 2 days", "https://storage.googleapis.com/a1aa/image/b1023918-3585-4326-2eda-05892c52270c.jpg"),
-        Product("Dairy", "Goat Milk from...", "Expired in 1 week", "https://storage.googleapis.com/a1aa/image/01318380-84d1-4c6a-ffad-5f34d8184585.jpg"),
-        Product("Meat", "Human Meat", "Expired in 1 day", "https://storage.googleapis.com/a1aa/image/6d347f5c-9493-4632-cd10-267ad1a4269c.jpg"),
-        Product("Meat", "Monkey Meat", "", "https://storage.googleapis.com/a1aa/image/ea400dba-9b4b-448d-be0e-5ba7b8a31932.jpg"),
-        Product("Meat", "Chai's Leg", "", "https://storage.googleapis.com/a1aa/image/529651aa-15bf-49ce-f0d0-9bd8793cd9fa.jpg")
-    )
-
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
-
         super.onCreate(savedInstanceState)
 
         setContent {
-            InventoryScreen()
+
 
             val navController = rememberNavController()
             var isSettingsScreen by remember { mutableStateOf(false) }
             var searchText by remember { mutableStateOf("") }
             var isFilterScreen by remember { mutableStateOf(false) }
+            val context = LocalContext.current
+            val viewmodel: Productviewmodel = viewModel (factory = ViewModelProvider.AndroidViewModelFactory.getInstance(context.applicationContext as android.app.Application))
+            val products by viewmodel.productFlow.collectAsState(initial = emptyList())
+            val database = InventoryDatabase.getDatabase(context)
+            val productDao = database.productDao()
+            val filterViewModel: FilterViewModel = viewModel(
+                factory = FilterViewModelFactory(productDao)
+            )
+            LaunchedEffect(searchText) {
+                filterViewModel.setSearchText(searchText)
+            }
 
             Scaffold(
                 topBar = {
@@ -121,7 +126,12 @@ class MainActivity2 : ComponentActivity() {
                     }
                 }
             ) { paddingValues ->
-                NavigationGraph(navController, products, paddingValues, searchText)
+                NavigationGraph(
+                    navController = navController,
+                    paddingValues = paddingValues,
+                    searchText = searchText,
+                    filterViewModel = filterViewModel
+                )
             }
         }
     }
@@ -129,39 +139,46 @@ class MainActivity2 : ComponentActivity() {
 
 @Composable
 fun ProductListScreen(
-    products: List<MainActivity2.Product>,
     navController: NavHostController,
     paddingValues: PaddingValues,
-    searchText: String
+    viewModel: FilterViewModel
 ) {
+    val filteredProducts by viewModel.filteredProducts.collectAsState()
+
     val configuration = LocalConfiguration.current
     val screenWidth = configuration.screenWidthDp.dp
     val columnCount = when {
-        screenWidth < 600.dp -> 2 // For small screens
-        screenWidth < 900.dp -> 3 // For medium screens
-        else -> 4 // For large screens
-    }
-    val filteredProducts = if (searchText.isEmpty()) {
-        products
-    } else {
-        products.filter {
-            it.name.contains(searchText, ignoreCase = true) || it.category.contains(searchText, ignoreCase = true)
-        }
+        screenWidth < 600.dp -> 2
+        screenWidth < 900.dp -> 3
+        else -> 4
     }
 
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(columnCount),
-            modifier = Modifier
-                .padding(paddingValues)
-                .padding(horizontal = 12.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            items(filteredProducts) { product ->
-                ProductCard(product)
-            }
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(columnCount),
+        modifier = Modifier
+            .padding(paddingValues)
+            .padding(horizontal = 12.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        items(filteredProducts) { product ->
+            ProductCard(
+                product = product,
+                onClick = {
+                    Log.d("DEBUG", "Clicked ${product.product_name}")
+                    val intent = Intent(navController.context, Edit::class.java)
+                    intent.putExtra("productData", product)
+                    navController.context.startActivity(intent)
+                },
+                onMoreOptionsClick = { selectedProduct ->
+                    Log.d("ProductListScreen", "More options clicked for ${selectedProduct.product_name}")
+                }
+            )
         }
     }
+}
+
+
 
 
 @Composable
@@ -240,7 +257,11 @@ fun TopBar(
 }
 
 @Composable
-fun ProductCard(product: MainActivity2.Product) {
+fun ProductCard(
+    product: ProductData,
+    onClick: () -> Unit,
+    onMoreOptionsClick: (ProductData) -> Unit
+) {
     Card(
         shape = RoundedCornerShape(10.dp),
         backgroundColor = Color.White,
@@ -248,10 +269,12 @@ fun ProductCard(product: MainActivity2.Product) {
             .height(180.dp)
             .fillMaxWidth()
             .border(1.dp, Color(0xFFE0E0E0), RoundedCornerShape(10.dp))
-    ) {
-        Column(
-            modifier = Modifier.fillMaxSize()
-        ) {
+            .clickable { onClick() }, // ✅ ใช้ onClick ที่เรารับเข้ามา
+        elevation = 4.dp
+    )
+    {
+        Column(modifier = Modifier.fillMaxSize()) {
+
             Box(
                 modifier = Modifier
                     .padding(8.dp)
@@ -260,25 +283,26 @@ fun ProductCard(product: MainActivity2.Product) {
                     .padding(horizontal = 8.dp, vertical = 2.dp)
             ) {
                 Text(
-                    text = product.category,
+                    text = product.categories,
                     fontSize = 12.sp,
                     color = Color(0xFF1976D2),
                     fontWeight = FontWeight.Bold
                 )
             }
+
             Box(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth(),
                 contentAlignment = Alignment.Center
             ) {
-                Image(
-                    painter = rememberAsyncImagePainter(product.imageUrl),
-                    contentDescription = "${product.name} image",
-                    modifier = Modifier.size(60.dp),
-                    contentScale = ContentScale.Crop // Changed to Crop for better image filling
-                )
+
+
+                SmartImageLoader(imagePath = product.image_url, modifier = Modifier.size(80.dp))
+
+
             }
+
             Row(
                 modifier = Modifier
                     .background(Color(0xFFBBDEFB))
@@ -286,29 +310,19 @@ fun ProductCard(product: MainActivity2.Product) {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Column(
-                    modifier = Modifier.weight(1f)
-                ) {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = product.name,
+                        text = product.product_name,
                         fontWeight = FontWeight.Bold,
                         fontSize = 14.sp,
                         color = Color.Black,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
-                    if (product.expiry.isNotEmpty()) {
-                        Text(
-                            text = product.expiry,
-                            fontSize = 12.sp,
-                            color = Color(0xFFD32F2F), // Red color for expiry
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
                 }
+
                 IconButton(
-                    onClick = { /* More options */ },
+                    onClick = { onMoreOptionsClick(product) }, // ✅ ส่ง product กลับ
                     modifier = Modifier.size(28.dp)
                 ) {
                     Icon(
@@ -317,6 +331,54 @@ fun ProductCard(product: MainActivity2.Product) {
                         tint = Color.Black
                     )
                 }
+            }
+        }
+    }
+}
+@Composable
+fun SmartImageLoader(imagePath: String, modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+
+    when {
+        imagePath.startsWith("http") -> {
+            // โหลดจากเว็บ (URL)
+            Image(
+                painter = rememberAsyncImagePainter(imagePath),
+                contentDescription = "Image from web",
+                modifier = modifier,
+                contentScale = ContentScale.Crop
+            )
+        }
+
+        imagePath.startsWith("content://") -> {
+            // โหลดจาก URI (ในเครื่อง)
+            val uri = remember(imagePath) { Uri.parse(imagePath) }
+            val bitmap = remember(uri) {
+                try {
+                    context.contentResolver.openInputStream(uri)?.use {
+                        BitmapFactory.decodeStream(it)
+                    }
+                } catch (e: Exception) {
+                    null
+                }
+            }
+
+            bitmap?.let {
+                Image(
+                    bitmap = it.asImageBitmap(),
+                    contentDescription = "Local image",
+                    modifier = modifier,
+                    contentScale = ContentScale.Crop
+                )
+            } ?: Box(modifier.background(Color.Gray)) {
+                Text("โหลดรูปไม่ได้", color = Color.White, modifier = Modifier.padding(8.dp))
+            }
+        }
+
+        else -> {
+            // ไม่รู้จักฟอร์แมต
+            Box(modifier.background(Color.LightGray)) {
+                Text("ไม่รองรับ", color = Color.Red, modifier = Modifier.padding(8.dp))
             }
         }
     }
@@ -337,7 +399,7 @@ fun BottomBar(navController: NavHostController,isSettingsScreen: Boolean,
         modifier = Modifier.height(70.dp)
     ) {
         IconButton(
-            onClick = { /* Menu action */ },
+            onClick = { context.startActivity(Intent(context, MainActivity2::class.java)) },
             modifier = Modifier.size(40.dp)
         ) {
             Icon(
@@ -394,37 +456,5 @@ fun BottomBar(navController: NavHostController,isSettingsScreen: Boolean,
 
         }
     }
-
-@Composable
-fun InventoryScreen() {
-    val context = LocalContext.current
-    val db = InventoryDatabase.getDatabase(context)
-    val dao =db.productDao()
-    LaunchedEffect(Unit) {
-        try {
-
-
-            val barcodes = listOf("737628064502", "1234567890123")
-
-            for (barcode in barcodes) {
-                val product = getProductData(barcode) // suspend
-
-                if (product != null) {
-                    Log.d("ProductList","ไปปป")
-                    dao.insertProduct(product) // suspend
-                }
-            }
-
-            val products = dao.getAllProducts() // suspend
-            products.forEach {
-                Log.d("ProductList", "${it.product_name} / ${it.categories} / ${it.image_url}")
-            }
-
-        } catch (e: Exception) {
-            Log.e("imon", "CRASH: ${e.message}", e)
-        }
-    }
-}
-
 
 

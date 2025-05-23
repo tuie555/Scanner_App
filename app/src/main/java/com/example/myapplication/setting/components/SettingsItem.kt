@@ -46,7 +46,7 @@ fun SettingsItem(label: String, value: String, showIcon: Boolean = true, onClick
             Box(
                 modifier = Modifier
                     .weight(0.4f)
-                    .background(Color.Gray),
+                    ,
 
                      // เว้นระยะจาก Value
                 contentAlignment = Alignment.CenterStart
