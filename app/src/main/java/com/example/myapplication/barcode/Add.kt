@@ -601,20 +601,28 @@ fun DayAdd(
     selectedDay: String? = null,
     onDayChange: (String) -> Unit
 ) {
-    val today = getTodayDate()
+    val today = getTodayDate() // เช่น "2025-05-23"
 
-    // Initialize with `selectedDay` or fallback to today
     var day by remember { mutableStateOf(selectedDay ?: today) }
+
+    // ส่งค่าวันที่ทันทีเมื่อเปิด Composable (ถ้ายังไม่ได้ส่ง)
+    LaunchedEffect(Unit) {
+        if (selectedDay == null) {
+            onDayChange(today)
+        }
+    }
 
     Column(modifier = Modifier.padding(1.dp)) {
         inputNotFile(
             label = "Add Day",
             value = day
         ) {
-            onDayChange(day) // Use the current value, or trigger date picker externally
+            // สามารถเปิด DatePicker เมื่อผู้ใช้กดได้ ถ้าต้องการ
         }
     }
 }
+
+
 
 @Composable
 fun inputNotFile(label: String, value: String, onToggleVisible: () -> Unit) {

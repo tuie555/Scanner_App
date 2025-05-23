@@ -97,7 +97,7 @@ fun SettingsScreen(
             }
             AnimatedVisibility(visible = visibleSelector == VisibleSelector.ALERT_MODE) {
                 SingleOptionSelector("Select Alert Mode:", alertModeOptionsList, selectedAlertMode.firstOrNull() ?: "") {
-                    selectedAlertMode = listOf(it)
+                    selectedAlertMode = it?.let { listOf(it) } ?: emptyList()
                 }
             }
 
@@ -107,7 +107,7 @@ fun SettingsScreen(
             }
             AnimatedVisibility(visible = visibleSelector == VisibleSelector.REPEAT_ALERT) {
                 SingleOptionSelector("Select Repeat Alert (time):", repeatAlertOptions, selectRepeatAlert.firstOrNull() ?: "") {
-                    selectRepeatAlert = listOf(it)
+                    selectRepeatAlert =it?.let { listOf(it) } ?: emptyList()
                 }
             }
 

@@ -12,7 +12,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -22,11 +21,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.myapplication.setting.components.OptionSelector
 import com.example.myapplication.setting.components.SettingsItem
 import com.example.myapplication.setting.components.SingleOptionSelector
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 
 enum class VisibleSelector {
     NONE,
@@ -70,19 +72,45 @@ fun SandFscreen(
         if (productsWithoutPhoto.isNotEmpty()) "NO Photo" else null
     )
 
-    val ExpiredInOptions = expirationDates.map { date ->
-        val daysLeft = (date - System.currentTimeMillis()) / (1000 * 60 * 60 * 24)
-        "Expired in $daysLeft day(s)"
-    }
-    val AddedOptions = addedDates
-        .filter { date ->
-            // คำนวณวันที่เพิ่มจนถึงปัจจุบัน ต้องมากกว่า 1 วัน (ในรูปของ millis)
-            val daysAgo = (System.currentTimeMillis() - date) / (1000 * 60 * 60 * 24)
-            daysAgo >= 1
-        }
+    val now = System.currentTimeMillis()
+
+    val expiredInOptions = expirationDates
+        .map { truncateToMidnight(it) }
+        .distinct()
+        .filter { it > now }
         .map { date ->
-            val daysAgo = ((System.currentTimeMillis() - date) / (1000 * 60 * 60 * 24)).toInt()
-            "Added $daysAgo day(s) ago"
+            val daysLeft = ((date - now) / (1000 * 60 * 60 * 24)).toInt()
+            date to when {
+                daysLeft >= 365 -> "Expired in ${daysLeft / 365} year(s)"
+                daysLeft >= 30 -> "Expired in ${daysLeft / 30} month(s)"
+                else -> "Expired in $daysLeft day(s)"
+            }
+        }
+
+
+    val expiredInValues = expiredInOptions.map { it.first }
+    val expiredInLabels = expiredInOptions.map { it.second }
+
+    val expirationDateLabels = expirationDates
+        .map { truncateToMidnight(it) }
+        .distinct()
+        .associateWith { timestamp ->
+            SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(timestamp))
+        }
+
+
+    val validAddedDates = addedDates.filter { it > 0 }
+    val AddedOptions = validAddedDates
+        .map { truncateToMidnight(it) }
+        .distinct()
+        .filter { it <= now }
+        .map { date ->
+            val daysAgo = ((now - date) / (1000 * 60 * 60 * 24)).toInt()
+            when {
+                daysAgo >= 365 -> "Added ${daysAgo / 365} year(s) ago"
+                daysAgo >= 30 -> "Added ${daysAgo / 30} month(s) ago"
+                else -> "Added $daysAgo day(s) ago"
+            }
         }
 
 
@@ -94,67 +122,99 @@ fun SandFscreen(
             .padding(16.dp)
             .verticalScroll(scrollState)
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            androidx.compose.material3.Text(
-                "Filter by:",
-                fontWeight = FontWeight.Bold,
-                fontSize = 20.sp
+        Text("Filter by:", fontWeight = FontWeight.Bold, fontSize = 20.sp)
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Category
+        SettingsItem("Category:", selectCategory) {
+            visibleSelector = toggleSelector(visibleSelector, VisibleSelector.CATEGORY)
+        }
+        AnimatedVisibility(visibleSelector == VisibleSelector.CATEGORY) {
+            OptionSelector("Category:", categories, selectedCategory) { option ->
+                val updated = if (option in selectedCategory) selectedCategory - option else selectedCategory + option
+                filterViewModel.setSelectedCategory(updated)
+            }
+        }
+
+        // Expired In
+        SettingsItem("Expired in:", selectedExpiredIn.firstOrNull()?.let { expiredInLabels.getOrNull(expiredInValues.indexOf(it)) } ?: "") {
+            visibleSelector = toggleSelector(visibleSelector, VisibleSelector.Expired_in)
+        }
+        AnimatedVisibility(visibleSelector == VisibleSelector.Expired_in) {
+            SingleOptionSelector(
+                title = "Select Expiration Range:",
+                options = expiredInLabels,
+                selectedOption = selectedExpiredIn.firstOrNull()?.let { expiredInLabels.getOrNull(expiredInValues.indexOf(it)) } ?: "",
+                onOptionToggle = { selectedLabel ->
+                    val index = expiredInLabels.indexOf(selectedLabel)
+                    val selected = if (index >= 0) listOf(expiredInValues[index]) else emptyList()
+                    filterViewModel.setSelectedExpiredIn(selected)
+                }
             )
-            Spacer(modifier = Modifier.height(16.dp))
+        }
 
-            SettingsItem("Category:", selectCategory) {
-                visibleSelector = if (visibleSelector == VisibleSelector.CATEGORY) VisibleSelector.NONE else VisibleSelector.CATEGORY
-            }
-            AnimatedVisibility(visibleSelector == VisibleSelector.CATEGORY) {
-                OptionSelector("Category:", categories, selectedCategory) { option ->
-                    val newSelection = if (option in selectedCategory) selectedCategory - option else selectedCategory + option
-                    filterViewModel.setSelectedCategory(newSelection)
+        // Added
+        SettingsItem("Added:", selectAdded) {
+            visibleSelector = toggleSelector(visibleSelector, VisibleSelector.Added)
+        }
+        AnimatedVisibility(visibleSelector == VisibleSelector.Added) {
+            SingleOptionSelector(
+                title = "Select Added Date:",
+                options = AddedOptions,
+                selectedOption = selectedAdded.firstOrNull() ?: "",
+                onOptionToggle = { label ->
+                    filterViewModel.setSelectedAdded(label?.let { listOf(it) } ?: emptyList())
                 }
-            }
+            )
+        }
 
-            SettingsItem("Expired in:", selectExpiredIn) {
-                visibleSelector = if (visibleSelector == VisibleSelector.Expired_in) VisibleSelector.NONE else VisibleSelector.Expired_in
-            }
-            AnimatedVisibility(visibleSelector == VisibleSelector.Expired_in) {
-                SingleOptionSelector("Select Alert Mode:", ExpiredInOptions, selectedExpiredIn.firstOrNull() ?: "") {
-                    filterViewModel.setSelectedExpiredIn(listOf(it))
+        // Added Photo
+        SettingsItem("Added Photo:", selectAddedPhoto) {
+            visibleSelector = toggleSelector(visibleSelector, VisibleSelector.Added_photo)
+        }
+        AnimatedVisibility(visibleSelector == VisibleSelector.Added_photo) {
+            SingleOptionSelector(
+                title = "Select Photo Option:",
+                options = AddedPhotoOptions,
+                selectedOption = selectedAddedPhoto.firstOrNull() ?: "",
+                onOptionToggle = { label ->
+                    filterViewModel.setSelectedAddedPhoto(label?.let { listOf(it) } ?: emptyList())
                 }
-            }
+            )
+        }
 
-            SettingsItem("Added:", selectAdded) {
-                visibleSelector = if (visibleSelector == VisibleSelector.Added) VisibleSelector.NONE else VisibleSelector.Added
-            }
-            AnimatedVisibility(visibleSelector == VisibleSelector.Added) {
-                SingleOptionSelector("Select Repeat Alert (time):", AddedOptions, selectedAdded.firstOrNull() ?: "") {
-                    filterViewModel.setSelectedAdded(listOf(it))
+        // Expiration Date
+        SettingsItem("Expiration Date:", selectedExpirationDate.firstOrNull()?.let { expirationDateLabels[it] } ?: "") {
+            visibleSelector = toggleSelector(visibleSelector, VisibleSelector.Expiration_Date)
+        }
+        AnimatedVisibility(visibleSelector == VisibleSelector.Expiration_Date) {
+            val labelList = expirationDateLabels.values.toList()
+            val valueList = expirationDateLabels.keys.toList()
+            SingleOptionSelector(
+                title = "Select Expiration Date:",
+                options = labelList,
+                selectedOption = selectedExpirationDate.firstOrNull()?.let { expirationDateLabels[it] } ?: "",
+                onOptionToggle = { label ->
+                    val index = labelList.indexOf(label)
+                    val selected = if (index >= 0) listOf(valueList[index]) else emptyList()
+                    filterViewModel.setSelectedExpirationDate(selected)
                 }
-            }
-
-            SettingsItem("Added Photo:", selectAddedPhoto) {
-                visibleSelector = if (visibleSelector == VisibleSelector.Added_photo) VisibleSelector.NONE else VisibleSelector.Added_photo
-            }
-            AnimatedVisibility(visibleSelector == VisibleSelector.Added_photo) {
-                SingleOptionSelector("Select Added Photo:", AddedPhotoOptions, selectedAddedPhoto.firstOrNull() ?: "") {
-                    filterViewModel.setSelectedAddedPhoto(listOf(it))
-                }
-            }
-
-            Spacer(modifier = Modifier.height(32.dp))
-            Text("Sort by:", fontWeight = FontWeight.Bold, fontSize = 20.sp)
-
-            SettingsItem("Expiration Date:", selectExpirationDate) {
-                visibleSelector = if (visibleSelector == VisibleSelector.Expiration_Date) VisibleSelector.NONE else VisibleSelector.Expiration_Date
-            }
-            AnimatedVisibility(visibleSelector == VisibleSelector.Expiration_Date) {
-                SingleOptionSelector("Select Expiration Date:", ExpiredInOptions, selectedExpirationDate.firstOrNull() ?: "") {
-                    filterViewModel.setSelectedExpirationDate(listOf(it))
-                }
-            }
+            )
         }
     }
 }
 
-
-
-
-
+// Utility function
+private fun toggleSelector(current: VisibleSelector, target: VisibleSelector): VisibleSelector {
+    return if (current == target) VisibleSelector.NONE else target
+}
+private fun truncateToMidnight(timestamp: Long): Long {
+    val calendar = java.util.Calendar.getInstance().apply {
+        timeInMillis = timestamp
+        set(java.util.Calendar.HOUR_OF_DAY, 0)
+        set(java.util.Calendar.MINUTE, 0)
+        set(java.util.Calendar.SECOND, 0)
+        set(java.util.Calendar.MILLISECOND, 0)
+    }
+    return calendar.timeInMillis
+}

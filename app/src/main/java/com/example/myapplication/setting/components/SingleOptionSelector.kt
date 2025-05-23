@@ -19,26 +19,48 @@ import androidx.compose.ui.draw.clip
 fun SingleOptionSelector(
     title: String,
     options: List<String>,
-    selectedOptions: String,
-    onOptionToggle: (String) -> Unit
+    selectedOption: String, // เปลี่ยนชื่อเพื่อสื่อความหมายว่าเลือกได้แค่ 1 อัน
+    onOptionToggle: (String?) -> Unit // nullable เพื่อยกเลิกการเลือก
 ) {
     Column(
         modifier = Modifier
             .background(Color(0xFFE0E0E0), shape = RoundedCornerShape(24.dp))
             .padding(16.dp)
     ) {
-        Text(title, fontWeight = FontWeight.Bold, color = Color.Black, modifier = Modifier.padding(bottom = 12.dp))
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            title,
+            fontWeight = FontWeight.Bold,
+            color = Color.Black,
+            modifier = Modifier.padding(bottom = 12.dp)
+        )
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
             options.forEach { option ->
-                val isSelected = selectedOptions.contains(option)
+                val isSelected = selectedOption == option
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(50))
-                        .background(if (isSelected) Color(0xFFFF4D4D) else Color(0xFFF5F5F5))
-                        .clickable { onOptionToggle(option) }
+                        .background(
+                            if (isSelected) Color(0xFFFF4D4D)
+                            else Color(0xFFF5F5F5)
+                        )
+                        .clickable {
+                            if (isSelected) {
+                                onOptionToggle(null) // ยกเลิกการเลือก
+                            } else {
+                                onOptionToggle(option)
+                            }
+                        }
                         .padding(horizontal = 20.dp, vertical = 10.dp)
                 ) {
-                    Text(option, color = if (isSelected) Color.White else Color.DarkGray, fontWeight = FontWeight.Medium, fontSize = 14.sp)
+                    Text(
+                        option,
+                        color = if (isSelected) Color.White else Color.DarkGray,
+                        fontWeight = FontWeight.Medium,
+                        fontSize = 14.sp
+                    )
                 }
             }
         }

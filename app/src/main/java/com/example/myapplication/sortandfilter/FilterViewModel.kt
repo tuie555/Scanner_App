@@ -35,7 +35,7 @@ class FilterViewModel(private val dao: ProductDao) : ViewModel() {
     var selectedCategory = MutableStateFlow<List<String>>(emptyList())
         private set
 
-    var selectedExpiredIn = MutableStateFlow<List<String>>(emptyList())
+    var selectedExpiredIn = MutableStateFlow<List<Long>>(emptyList()) // <-- เปลี่ยนจาก String เป็น Long
         private set
 
     var selectedAdded = MutableStateFlow<List<String>>(emptyList())
@@ -44,7 +44,7 @@ class FilterViewModel(private val dao: ProductDao) : ViewModel() {
     var selectedAddedPhoto = MutableStateFlow<List<String>>(emptyList())
         private set
 
-    var selectedExpirationDate = MutableStateFlow<List<String>>(emptyList())
+    var selectedExpirationDate = MutableStateFlow<List<Long>>(emptyList()) // <-- เปลี่ยนจาก String เป็น Long
         private set
 
     var productName = MutableStateFlow("")
@@ -52,18 +52,23 @@ class FilterViewModel(private val dao: ProductDao) : ViewModel() {
 
     // --- Setters ---
     fun setSelectedCategory(value: List<String>) { selectedCategory.value = value }
-    fun setSelectedExpiredIn(value: List<String>) { selectedExpiredIn.value = value }
+    fun setSelectedExpiredIn(value: List<Long>) { selectedExpiredIn.value = value }
     fun setSelectedAdded(value: List<String>) { selectedAdded.value = value }
     fun setSelectedAddedPhoto(value: List<String>) { selectedAddedPhoto.value = value }
-    fun setSelectedExpirationDate(value: List<String>) { selectedExpirationDate.value = value }
+    fun setSelectedExpirationDate(value: List<Long>) { selectedExpirationDate.value = value }
 
-    fun getFilteredByPhoto(option: String,dao: ProductDao): Flow<List<ProductData>> {
+    fun setSearchText(text: String) {
+        productName.value = text
+    }
+
+    fun getFilteredByPhoto(option: String, dao: ProductDao): Flow<List<ProductData>> {
         return when (option) {
             "Added Photo" -> allProductsWithPhotos
             "NO Photo" -> allProductsWithoutPhotos
             else -> dao.getAllProducts()
         }
     }
+
     val filteredProducts = MutableStateFlow<List<ProductData>>(emptyList())
 
     init {
@@ -77,29 +82,48 @@ class FilterViewModel(private val dao: ProductDao) : ViewModel() {
             launch { productName.collect { filterProducts() } }
         }
     }
+
     private fun filterProducts() {
-        val dateFormatter = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault())
         val currentProducts = allProducts.value
+        val now = System.currentTimeMillis()
 
         val filtered = currentProducts.filter { product ->
-            val expirationDateStr = product.expiration_date?.let { dateFormatter.format(java.util.Date(it)) } ?: ""
-            val addDayStr = product.add_day?.let { dateFormatter.format(java.util.Date(it)) } ?: ""
+            val expirationDate = product.expiration_date
+            val addDay = product.add_day
 
-            (selectedCategory.value.isEmpty() || selectedCategory.value.contains(product.categories)) &&
-                    (selectedExpiredIn.value.isEmpty() || selectedExpiredIn.value.contains(expirationDateStr)) &&
-                    (selectedAdded.value.isEmpty() || selectedAdded.value.contains(addDayStr)) &&
-                    (selectedAddedPhoto.value.isEmpty() || (
-                            selectedAddedPhoto.value.contains("Added Photo") && product.image_url.isNotBlank() ||
-                                    selectedAddedPhoto.value.contains("NO Photo") && product.image_url.isBlank()
-                            )) &&
-                    (selectedExpirationDate.value.isEmpty() || selectedExpirationDate.value.contains(expirationDateStr)) &&
-                    (productName.value.isEmpty() || product.product_name.contains(productName.value, ignoreCase = true) || product.categories.contains(productName.value, ignoreCase = true))
+            val matchesCategory = selectedCategory.value.isEmpty() || selectedCategory.value.contains(product.categories)
+
+            val matchesExpiredIn = selectedExpiredIn.value.isEmpty() || (
+                    expirationDate != null && selectedExpiredIn.value.any { targetTimestamp ->
+                        val daysLeft = (expirationDate - now) / (1000 * 60 * 60 * 24)
+                        val targetDaysLeft = (targetTimestamp - now) / (1000 * 60 * 60 * 24)
+                        daysLeft == targetDaysLeft
+                    }
+                    )
+
+            val matchesAdded = selectedAdded.value.isEmpty() || (
+                    addDay != null && selectedAdded.value.contains(
+                        java.text.SimpleDateFormat("dd/MM/yyyy").format(java.util.Date(addDay))
+                    )
+                    )
+
+            val matchesPhoto = selectedAddedPhoto.value.isEmpty() || (
+                    selectedAddedPhoto.value.contains("Added Photo") && product.image_url.isNotBlank() ||
+                            selectedAddedPhoto.value.contains("NO Photo") && product.image_url.isBlank()
+                    )
+
+            val matchesExpirationDate = selectedExpirationDate.value.isEmpty() || (
+                    expirationDate != null && selectedExpirationDate.value.contains(expirationDate)
+                    )
+
+            val matchesSearch = productName.value.isEmpty() ||
+                    product.product_name.contains(productName.value, ignoreCase = true) ||
+                    product.categories.contains(productName.value, ignoreCase = true)
+
+            matchesCategory && matchesExpiredIn && matchesAdded &&
+                    matchesPhoto && matchesExpirationDate && matchesSearch
         }
 
         filteredProducts.value = filtered
     }
-    fun setSearchText(text: String) {
-        productName.value = text
-    }
-
 }
