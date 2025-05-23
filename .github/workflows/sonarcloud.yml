@@ -41,4 +41,4 @@ jobs:
       - name: SonarCloud Analysis
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: ./gradlew sonar -Dsonar.login=$SONAR_TOKEN -Dsonar.branch.name=main
+        run: ./gradlew sonar -Dsonar.token=$SONAR_TOKEN -Dsonar.branch.name=main
