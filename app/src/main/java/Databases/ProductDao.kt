@@ -41,6 +41,9 @@ interface ProductDao {
     fun getWithoutPhotos(): Flow<List<ProductData>>
     @Query("DELETE FROM product_table WHERE id = :id")
     suspend fun deleteById(id: Int)
+    @Query("SELECT DISTINCT  product_name FROM product_table ORDER BY  product_name")
+    fun getAllProductNames(): Flow<List<String>>
+
 
     // ดึงวันหมดอายุทั้งหมด (ใช้ในกรณีทำ ExpiredIn ได้เอง)
     @Query("SELECT expiration_date FROM product_table")

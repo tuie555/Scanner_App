@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -50,6 +51,10 @@ class FilterViewModel(private val dao: ProductDao) : ViewModel() {
     var productName = MutableStateFlow("")
         private set
 
+    // --- Sort criteria ---
+    private val _selectedSortOption = MutableStateFlow("")
+    val selectedSortOption: StateFlow<String> = _selectedSortOption
+
     // --- Setters ---
     fun setSelectedCategory(value: List<String>) { selectedCategory.value = value }
     fun setSelectedExpiredIn(value: List<Long>) { selectedExpiredIn.value = value }
@@ -59,6 +64,11 @@ class FilterViewModel(private val dao: ProductDao) : ViewModel() {
 
     fun setSearchText(text: String) {
         productName.value = text
+    }
+
+    fun setSortOption(option: String) {
+        _selectedSortOption.value = option
+        filterProducts()
     }
 
     fun getFilteredByPhoto(option: String, dao: ProductDao): Flow<List<ProductData>> {
@@ -80,6 +90,7 @@ class FilterViewModel(private val dao: ProductDao) : ViewModel() {
             launch { selectedAddedPhoto.collect { filterProducts() } }
             launch { selectedExpirationDate.collect { filterProducts() } }
             launch { productName.collect { filterProducts() } }
+            launch { selectedSortOption.collect { filterProducts() } }
         }
     }
 
@@ -124,6 +135,14 @@ class FilterViewModel(private val dao: ProductDao) : ViewModel() {
                     matchesPhoto && matchesExpirationDate && matchesSearch
         }
 
-        filteredProducts.value = filtered
+        val sorted = when (_selectedSortOption.value) {
+            "Name (A-Z)" -> filtered.sortedBy { it.product_name.lowercase() }
+            "Name (Z-A)" -> filtered.sortedByDescending { it.product_name.lowercase() }
+            "Expiration Date (Soonest)" -> filtered.sortedBy { it.expiration_date ?: Long.MAX_VALUE }
+            "Expiration Date (Latest)" -> filtered.sortedByDescending { it.expiration_date ?: Long.MIN_VALUE }
+            else -> filtered
+        }
+
+        filteredProducts.value = sorted
     }
 }

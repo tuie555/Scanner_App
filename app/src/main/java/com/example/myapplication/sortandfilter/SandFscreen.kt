@@ -38,6 +38,7 @@ enum class VisibleSelector {
     Added_photo,
     Expiration_Date,
     Product_Name,
+    SortOption
 }
 // SandFscreen.kt
 @Composable
@@ -71,6 +72,13 @@ fun SandFscreen(
         if (productsWithPhoto.isNotEmpty()) "Added Photo" else null,
         if (productsWithoutPhoto.isNotEmpty()) "NO Photo" else null
     )
+
+    val sortOptions = listOf(
+        "Name (A-Z)",
+        "Name (Z-A)",
+        "Expiration Date (Soonest)"
+    )
+    val selectedSortOption by filterViewModel.selectedSortOption.collectAsState()
 
     val now = System.currentTimeMillis()
 
@@ -201,7 +209,34 @@ fun SandFscreen(
                 }
             )
         }
+        Spacer(modifier = Modifier.height(16.dp))
+        Text("Sort by:", fontWeight = FontWeight.Bold, fontSize = 20.sp)
+        // ในส่วนของ Sort
+// แสดงค่าใน SettingsItem ให้เป็น "" (ว่าง) ถ้าเลือก "None" หรือ "" อยู่
+        SettingsItem("Sort:", if (selectedSortOption == "None" || selectedSortOption.isBlank()) "" else selectedSortOption) {
+            visibleSelector = toggleSelector(visibleSelector, VisibleSelector.SortOption)
+        }
+
+        AnimatedVisibility(visibleSelector == VisibleSelector.SortOption) {
+            SingleOptionSelector(
+                title = "Sort Options:",
+                options = sortOptions,
+                selectedOption = selectedSortOption,
+                onOptionToggle = { option ->
+                    if (option != null) {
+                        // กดซ้ำ option เดิมให้เปลี่ยนเป็นค่าว่าง (ยกเลิกเลือก)
+                        val newOption = if (option == selectedSortOption) "" else option
+                        filterViewModel.setSortOption(newOption)
+                    }
+                }
+            )
+        }
+
+
     }
+
+
+
 }
 
 // Utility function
