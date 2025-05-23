@@ -3,10 +3,10 @@ name: SonarCloud
 on:
   push:
     branches:
-      - fix_Error_insert_data
+      - main
   pull_request:
     branches:
-      - fix_Error_insert_data
+      - main
 
 jobs:
   build:
@@ -41,4 +41,4 @@ jobs:
       - name: SonarCloud Analysis
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: ./gradlew sonarqube -Dsonar.login=$SONAR_TOKEN -Dsonar.branch.name=fix_Error_insert_data
+        run: ./gradlew sonarqube -Dsonar.login=$SONAR_TOKEN -Dsonar.branch.name=main
