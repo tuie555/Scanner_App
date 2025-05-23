@@ -1,6 +1,7 @@
 package com.example.myapplication.Notification import Databases.ProductDao
 import Databases.ProductData
 import Databases.daysUntilExpiry
+import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
@@ -28,7 +29,7 @@ class NotificationTest : AppCompatActivity() {
         }
 
         productDao = InventoryDatabase.getDatabase(this).productDao()
-
+        Log.e("NotificationTest", "run")
         checkExpiringProducts() // Check and notify
 
     }
@@ -36,22 +37,25 @@ class NotificationTest : AppCompatActivity() {
     /**
      * Check for products that are about to expire
      */
+    @SuppressLint("NewApi")
     private fun checkExpiringProducts() {
         lifecycleScope.launch {
-            productDao.getAllProducts().collect { productList ->
-                productList.forEach { product ->
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            try {
+                productDao.getAllProducts().collect { productList ->
+                    productList.forEach { product ->
                         val daysUntilExpiry = product.daysUntilExpiry()
                         if (daysUntilExpiry != null && daysUntilExpiry <= 1) {
                             showFoodExpiryNotification(applicationContext, product)
                         }
-                    } else {
-                        Log.w("NotificationTest", "API level below 26 does not support LocalDate")
                     }
                 }
+            } catch (e: Exception) {
+                Log.e("NotificationTest", "Error checking expiry", e)
             }
         }
     }
+
+
 
     /**
      * Show Notification
@@ -86,7 +90,10 @@ class NotificationTest : AppCompatActivity() {
 
         Log.d("NOTIFY", "Sending notification: $notificationText")
         notificationManager.notify(product.id, builder.build())
-    }}
+    }
+
+
+}
 
 
 

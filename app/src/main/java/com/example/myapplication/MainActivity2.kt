@@ -1,6 +1,9 @@
 package com.example.myapplication
 import Databases.Productviewmodel
 import Databases.ProductData
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.content.Context
 import android.content.Intent
 import android.graphics.BitmapFactory
 import android.net.Uri
@@ -76,6 +79,8 @@ import coil.compose.rememberAsyncImagePainter
 import com.example.myapplication.barcode.Edit
 import com.example.myapplication.barcode.Scanner
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.core.app.NotificationCompat
+import com.example.myapplication.Notification.NotificationTest
 import com.example.myapplication.sortandfilter.FilterViewModel
 import com.example.myapplication.sortandfilter.FilterViewModelFactory
 
@@ -104,6 +109,22 @@ class MainActivity2 : ComponentActivity() {
             )
             LaunchedEffect(searchText) {
                 filterViewModel.setSearchText(searchText)
+                filterViewModel.setSearchText(searchText)
+
+                val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                val channelId = "test_channel"
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    val channel = NotificationChannel(channelId, "Test Channel", NotificationManager.IMPORTANCE_HIGH)
+                    notificationManager.createNotificationChannel(channel)
+                }
+
+                val notification = NotificationCompat.Builder(context, channelId)
+                    .setSmallIcon(android.R.drawable.ic_dialog_alert)
+                    .setContentTitle("Test Notification")
+                    .setContentText("This is a test notification.")
+                    .build()
+
+                notificationManager.notify(1, notification)
             }
 
             Scaffold(

@@ -123,6 +123,7 @@ dependencies {
 // Kotlinx serialization
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.1")
 
+
     // Jetpack Compose Dependencies
     implementation("androidx.compose.ui:ui:1.3.0")
     implementation("androidx.compose.material:material:1.3.0")
