@@ -79,6 +79,7 @@ import Databases.Addviewmodel
 import Databases.ProductData
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.ui.text.font.FontWeight
 import androidx.navigation.NavHostController
@@ -315,7 +316,10 @@ fun CenterAlignedTopAppBarExampleEdit(
                     Text("Enter Product Information", maxLines = 1, overflow = TextOverflow.Ellipsis)
                 },
                 navigationIcon = {
-                    BackButtonEdit()
+                    BackButtonEdit(onBackClick = {
+                        activity?.startActivity(Intent(activity, MainActivity2::class.java))
+                        activity?.finish()
+                    })
                 },
                 actions = {
                     Text(
@@ -355,16 +359,23 @@ fun CenterAlignedTopAppBarExampleEdit(
 }
 
 @Composable
-fun BackButtonEdit() {
+fun BackButtonEdit(onBackClick: () -> Unit) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .clickable { }
             .padding(start = 16.dp)
     ) {
-        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", modifier = Modifier.size(20.dp))
-        Spacer(modifier = Modifier.width(4.dp))
-        Text(text = "Back", fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        IconButton(onClick = onBackClick) {
+            Icon(
+                Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = "Back",
+                modifier = Modifier.size(20.dp)
+            )
+
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(text = "Back", fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
     }
 }
 
