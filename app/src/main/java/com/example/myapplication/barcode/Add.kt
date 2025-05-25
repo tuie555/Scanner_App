@@ -78,6 +78,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import coil.compose.rememberAsyncImagePainter
 import Databases.Addviewmodel
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.material3.IconButton
 import com.example.myapplication.MainActivity2
 import com.example.myapplication.setting.components.OptionSelector

@@ -80,6 +80,7 @@ import coil.compose.rememberAsyncImagePainter
 import Databases.Addviewmodel
 import Databases.ProductData
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.IconButton
 import androidx.compose.foundation.rememberScrollState
@@ -198,11 +199,8 @@ fun ProductScreen1(product: ProductData?, viewModel: Addviewmodel,navController:
             )
 
             DeleteProductButton(
-
                     productId = product.id,
                     viewModel = viewModel,
-                    navController = navController
-
             )
             Spacer(modifier = Modifier.height(16.dp))
         }
@@ -777,7 +775,6 @@ fun SettingsScreenaddEdit(
 fun DeleteProductButton(
     productId: Int,
     viewModel: Addviewmodel,
-    navController: NavHostController,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -786,7 +783,10 @@ fun DeleteProductButton(
         onClick = {
             viewModel.deleteProductById(productId)
             Toast.makeText(context, "ลบสินค้าสำเร็จ", Toast.LENGTH_SHORT).show()
-            navController.popBackStack()
+            val intent = Intent(context, MainActivity2::class.java)
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+            context.startActivity(intent)
+
         },
         modifier = modifier
             .fillMaxWidth()
