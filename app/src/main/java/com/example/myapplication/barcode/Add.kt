@@ -42,12 +42,14 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DatePickerState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDatePickerState
@@ -79,6 +81,7 @@ import Databases.Addviewmodel
 import androidx.compose.material3.IconButton
 import com.example.myapplication.MainActivity2
 import com.example.myapplication.setting.components.OptionSelector
+import com.example.myapplication.ui.theme.getAdaptiveHorizontalPadding
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -131,6 +134,8 @@ fun ProductScreen(barcode: String, viewModel: Addviewmodel) {
     var isLoading by remember { mutableStateOf(true) }
     var newImageUri by remember { mutableStateOf<Uri?>(null) }
 
+    // Removed LocalConfiguration and related variables for padding
+
     LaunchedEffect(barcode) {
         isLoading = true
         errorMessage = ""
@@ -160,31 +165,30 @@ fun ProductScreen(barcode: String, viewModel: Addviewmodel) {
 
 
     // Main UI
-    Box(modifier = Modifier.fillMaxSize()) {
-        CenterAlignedTopAppBarExample(
-            barcode = barcode, // ✅ เพิ่ม barcode
-            name = name,
-            categories = categories,
-            imageUrl = imageUrl,
-            newImageUri = newImageUri,
-            addDay = addDay,
-            expirationDate = expirationDate,
-            notes = notes,
-            viewModel = viewModel,
-            context = context,
-            onBackClick = {
-                val intent = Intent(context, MainActivity2::class.java)
-                context.startActivity(intent)}
-
-        )
-
-
+    CenterAlignedTopAppBarExample( // This is the Scaffold
+        barcode = barcode,
+        name = name,
+        categories = categories,
+        imageUrl = imageUrl,
+        newImageUri = newImageUri,
+        addDay = addDay,
+        expirationDate = expirationDate,
+        notes = notes,
+        viewModel = viewModel,
+        context = context,
+        onBackClick = {
+            val intent = Intent(context, MainActivity2::class.java)
+            context.startActivity(intent)
+        }
+    ) { innerPadding -> // Content lambda for the Scaffold
         Column(
             modifier = Modifier
-                .align(Alignment.TopCenter)
-                .padding(top = 100.dp, start = 16.dp, end = 16.dp)
+                .padding(innerPadding) // Apply Scaffold's padding
+                .padding(horizontal = getAdaptiveHorizontalPadding()) // Use adaptive padding utility
+                .fillMaxSize()
+            // Add .verticalScroll(rememberScrollState()) if content exceeds screen height
         ) {
-            Spacer(modifier = Modifier.height(16.dp))
+            // Spacer(modifier = Modifier.height(16.dp)) // Original spacer, adjust if needed
 
             AddPhotoButton(
                 imageUrl = imageUrl,
@@ -312,7 +316,8 @@ fun CenterAlignedTopAppBarExample(
     notes: String,
     viewModel: Addviewmodel,
     context: Context,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    content: @Composable (PaddingValues) -> Unit // Added content lambda
 ) {
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
     val context1 = LocalContext.current
@@ -321,7 +326,6 @@ fun CenterAlignedTopAppBarExample(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-
                 title = {
                     Text(
                         text = "Enter Product Information",
@@ -330,7 +334,7 @@ fun CenterAlignedTopAppBarExample(
                     )
                 },
                 navigationIcon = {
-                    BackButton(onBackClick) // 👈 ใส่ BackButton ที่นี่
+                    BackButton(onBackClick)
                 },
                 actions = {
                     Text(
@@ -339,9 +343,7 @@ fun CenterAlignedTopAppBarExample(
                         modifier = Modifier.clickable {
                             Log.d("DEBUG", "Done button clicked")
                             coroutineScope.launch {
-                                // ถ้า newImageUri ไม่ null ให้ใช้ newImageUri.toString() แทน imageUrl เก่า
                                 val finalImageUrl = newImageUri?.toString() ?: imageUrl
-                                // ขอสิทธิ์ถาวรถ้าเป็น content://
                                 if (finalImageUrl.startsWith("content://")) {
                                     try {
                                         context.contentResolver.takePersistableUriPermission(
@@ -352,7 +354,6 @@ fun CenterAlignedTopAppBarExample(
                                         e.printStackTrace()
                                     }
                                 }
-
                                 saveProductIfValid(
                                     viewModel = viewModel,
                                     barcode = barcode,
@@ -376,9 +377,8 @@ fun CenterAlignedTopAppBarExample(
                 scrollBehavior = scrollBehavior,
             )
         },
-    ) { innerPadding ->
-        ScrollContent(innerPadding)
-    }
+        content = content // Use the content lambda here
+    )
 }
 
 
@@ -387,10 +387,9 @@ fun CenterAlignedTopAppBarExample(
 @Composable
 fun BackButton(onBackClick: () -> Unit) {
     Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .clickable { }
-            .padding(start = 16.dp)
+        verticalAlignment = Alignment.CenterVertically
+        // Modifier.clickable {} removed
+        // Modifier.padding(start = 16.dp) removed
     ) {
         IconButton(onClick = onBackClick) {
             Icon(
@@ -422,8 +421,8 @@ fun AddPhotoButton(
 
     Box(
         modifier = modifier
-            .width(300.dp)
-            .height(150.dp)
+            .fillMaxWidth(0.8f) // Changed width
+            .aspectRatio(16 / 9f) // Added aspect ratio
             .clip(RoundedCornerShape(25.dp))
             .background(Color(0xFFD3D3D3))
             .clickable { imagePickerLauncher.launch("image/*") }, // Launch image picker
@@ -453,8 +452,7 @@ fun AddPhotoButton(
         }
     }
 }
-@Composable
-fun ScrollContent(innerPadding: PaddingValues) {}
+// Removed ScrollContent as it's no longer used directly here or is implicit by passing content lambda
 
 @Composable
 fun EmailInputExample(productName1: String, onValueChange: (String) -> Unit) {
@@ -520,45 +518,44 @@ fun ExpirationDateSelector(
     onDateChange: (String) -> Unit
 ) {
     val currentDateMillis = System.currentTimeMillis()
+    var showDatePickerDialog by remember { mutableStateOf(false) }
 
     val datePickerState = rememberDatePickerState(
         initialSelectedDateMillis = selectedDate?.let { convertDateToMillis(it) } ?: currentDateMillis
     )
 
-    val formattedDate = convertMillisToDate(datePickerState.selectedDateMillis ?: currentDateMillis)
-
-    // Trigger `onDateChange` when the date changes
+    // Trigger `onDateChange` when the date changes and dialog is confirmed
     LaunchedEffect(datePickerState.selectedDateMillis) {
-        datePickerState.selectedDateMillis?.let { millis ->
-            onDateChange(convertMillisToDate(millis))
-        }
+        // This effect will run when selectedDateMillis changes.
+        // The actual call to onDateChange will happen upon dialog confirmation if needed,
+        // or can be directly updated if the dialog interaction confirms selection.
+        // For this setup, onDateChange is called when OK is clicked.
     }
 
     Column(modifier = Modifier.padding(0.dp)) {
-        // 🔹 ช่องแสดงวันที่ที่เลือก
         inputNotFile(
             label = "Expiration Date",
-            value = datePickerState.selectedDateMillis?.let { convertMillisToDate(it) } ?: "",
-            onToggleVisible = {}
+            value = datePickerState.selectedDateMillis?.let { convertMillisToDate(it) } ?: "Select Date",
+            onToggleVisible = { showDatePickerDialog = true } // Open dialog on click
         )
 
-        // 🔹 ปฏิทินถูกซ่อนไปครึ่งหัวบน
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(380.dp) // ปรับให้พอดีแค่ปฏิทิน
-                .clipToBounds(), // ตัดส่วนที่ล้นไม่ให้แสดง
-            shape = RoundedCornerShape(20.dp),
-            elevation = CardDefaults.cardElevation(4.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .offset(y = (-120).dp) // 👈 ซ่อนหัวด้านบน
+        if (showDatePickerDialog) {
+            DatePickerDialog(
+                onDismissRequest = { showDatePickerDialog = false },
+                confirmButton = {
+                    TextButton(onClick = {
+                        showDatePickerDialog = false
+                        // Update the date when "OK" is clicked
+                        datePickerState.selectedDateMillis?.let { millis ->
+                            onDateChange(convertMillisToDate(millis))
+                        }
+                    }) { Text("OK") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDatePickerDialog = false }) { Text("Cancel") }
+                }
             ) {
-                DatePicker(
-                    state = datePickerState,
-                    showModeToggle = false, // ❌ ไม่ให้ toggle input mode
-                )
+                DatePicker(state = datePickerState, showModeToggle = false)
             }
         }
     }
@@ -572,21 +569,7 @@ fun convertDateToMillis(date: String): Long {
     }
 }
 
-@Composable
-fun DatePickerCard(datePickerState: DatePickerState) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(380.dp)
-            .clipToBounds(),
-        shape = RoundedCornerShape(20.dp),
-        elevation = CardDefaults.cardElevation(4.dp)
-    ) {
-        Box(modifier = Modifier.offset(y = (-120).dp)) {
-            DatePicker(state = datePickerState, showModeToggle = false)
-        }
-    }
-}
+// Removed DatePickerCard as it's no longer used
 
 fun convertMillisToDate(millis: Long): String {
     if (millis == 0L) return "No date selected"

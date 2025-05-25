@@ -5,8 +5,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -28,8 +28,7 @@ import androidx.compose.ui.unit.sp
 fun SettingsItem(label: String, value: String, showIcon: Boolean = true, onClick: () -> Unit) {
     Box(
         modifier = Modifier
-
-            .height(45.dp)
+            .defaultMinSize(minHeight = 48.dp) // Changed from height(45.dp)
             .fillMaxWidth()
             .padding(8.dp)
             .clip(RoundedCornerShape(50.dp))

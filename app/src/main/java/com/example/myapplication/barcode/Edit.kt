@@ -42,12 +42,14 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DatePickerState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDatePickerState
@@ -80,6 +82,8 @@ import Databases.ProductData
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.IconButton
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.ui.text.font.FontWeight
 import androidx.navigation.NavHostController
@@ -88,6 +92,7 @@ import coil.request.CachePolicy
 import coil.request.ImageRequest
 import com.example.myapplication.MainActivity2
 import com.example.myapplication.setting.components.OptionSelector
+import com.example.myapplication.ui.theme.getAdaptiveHorizontalPadding
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -134,29 +139,29 @@ fun ProductScreen1(product: ProductData?, viewModel: Addviewmodel,navController:
     var notes by remember { mutableStateOf(product.notes ?: "") }
     var newImageUri by remember { mutableStateOf<Uri?>(null) }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        CenterAlignedTopAppBarExampleEdit(
-            id = product.id, // ✅ ส่ง id ไปด้วย
-            barcode = product.barcode,
-            name = name,
-            categories = categories,
-            imageUrl = imageUrl,
-            newImageUri = newImageUri,
-            addDay = addDay,
-            expirationDate = expirationDate,
-            notes = notes,
-            viewModel = viewModel,
-            context = context
-        )
+    // Removed LocalConfiguration and related variables for padding
 
-
-
+    CenterAlignedTopAppBarExampleEdit( // This is the Scaffold
+        id = product.id,
+        barcode = product.barcode,
+        name = name,
+        categories = categories,
+        imageUrl = imageUrl,
+        newImageUri = newImageUri,
+        addDay = addDay,
+        expirationDate = expirationDate,
+        notes = notes,
+        viewModel = viewModel,
+        context = context
+    ) { innerPadding -> // Content lambda for the Scaffold
         Column(
             modifier = Modifier
-                .align(Alignment.TopCenter)
-                .padding(top = 100.dp, start = 16.dp, end = 16.dp)
+                .padding(innerPadding) // Apply Scaffold's padding
+                .padding(horizontal = getAdaptiveHorizontalPadding()) // Use adaptive padding utility
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState()) // Make content scrollable
         ) {
-            Spacer(modifier = Modifier.height(16.dp))
+            // Spacer(modifier = Modifier.height(16.dp)) // Original spacer, adjust if needed
 
             AddPhotoButtonEdit(
                 imageUrl = imageUrl,
@@ -298,9 +303,9 @@ fun CenterAlignedTopAppBarExampleEdit(
     expirationDate: String,
     notes: String,
     viewModel: Addviewmodel,
-    context: Context
-)
- {
+    context: Context,
+    content: @Composable (PaddingValues) -> Unit // Added content lambda
+) {
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
     val context1 = LocalContext.current
     val activity = context1 as? Activity
@@ -329,7 +334,7 @@ fun CenterAlignedTopAppBarExampleEdit(
                             Log.d("DEBUG", "Done button clicked")
                             coroutineScope.launch {
                                 updateProductIfValidEdit(
-                                    id = id, // ✅ ใส่ id ที่ได้จาก product ที่โหลดมา
+                                    id = id,
                                     viewModel = viewModel,
                                     barcode = barcode,
                                     name = name,
@@ -348,23 +353,20 @@ fun CenterAlignedTopAppBarExampleEdit(
                             }
                         }
                     )
-
                 },
                 scrollBehavior = scrollBehavior,
             )
         },
-    ) { innerPadding ->
-        ScrollContentEdit(innerPadding)
-    }
+        content = content // Use the content lambda here
+    )
 }
 
 @Composable
 fun BackButtonEdit(onBackClick: () -> Unit) {
     Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .clickable { }
-            .padding(start = 16.dp)
+        verticalAlignment = Alignment.CenterVertically
+        // Modifier.clickable {} removed
+        // Modifier.padding(start = 16.dp) removed
     ) {
         IconButton(onClick = onBackClick) {
             Icon(
@@ -397,8 +399,8 @@ fun AddPhotoButtonEdit(
 
     Box(
         modifier = modifier
-            .width(300.dp)
-            .height(150.dp)
+            .fillMaxWidth(0.8f) // Changed width
+            .aspectRatio(16 / 9f) // Added aspect ratio
             .clip(RoundedCornerShape(25.dp))
             .background(Color(0xFFD3D3D3))
             .clickable { imagePickerLauncher.launch("image/*") }, // Launch image picker
@@ -441,8 +443,7 @@ fun AddPhotoButtonEdit(
         }
     }
 }
-@Composable
-fun ScrollContentEdit(innerPadding: PaddingValues) {}
+// Removed ScrollContentEdit as it's no longer used directly here or is implicit by passing content lambda
 
 @Composable
 fun EmailInputExampleEdit(productName1: String, onValueChange: (String) -> Unit) {
@@ -508,45 +509,42 @@ fun ExpirationDateSelectorEdit(
     onDateChange: (String) -> Unit
 ) {
     val currentDateMillis = System.currentTimeMillis()
+    var showDatePickerDialog by remember { mutableStateOf(false) }
 
     val datePickerState = rememberDatePickerState(
         initialSelectedDateMillis = selectedDate?.let { convertDateToMillisEdit(it) } ?: currentDateMillis
     )
 
-    val formattedDate = convertMillisToDateEdit(datePickerState.selectedDateMillis ?: currentDateMillis)
-
-    // Trigger `onDateChange` when the date changes
+    // Trigger `onDateChange` when the date changes (typically after dialog confirmation)
     LaunchedEffect(datePickerState.selectedDateMillis) {
-        datePickerState.selectedDateMillis?.let { millis ->
-            onDateChange(convertMillisToDateEdit(millis))
-        }
+        // This can be used if date needs to update live, but for dialog,
+        // it's better to update on confirm.
     }
 
     Column(modifier = Modifier.padding(0.dp)) {
-        // 🔹 ช่องแสดงวันที่ที่เลือก
         inputNotFileEdit(
             label = "Expiration Date",
-            value = datePickerState.selectedDateMillis?.let { convertMillisToDateEdit(it) } ?: "",
-            onToggleVisible = {}
+            value = datePickerState.selectedDateMillis?.let { convertMillisToDateEdit(it) } ?: "Select Date",
+            onToggleVisible = { showDatePickerDialog = true } // Open dialog on click
         )
 
-        // 🔹 ปฏิทินถูกซ่อนไปครึ่งหัวบน
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(380.dp) // ปรับให้พอดีแค่ปฏิทิน
-                .clipToBounds(), // ตัดส่วนที่ล้นไม่ให้แสดง
-            shape = RoundedCornerShape(20.dp),
-            elevation = CardDefaults.cardElevation(4.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .offset(y = (-120).dp) // 👈 ซ่อนหัวด้านบน
+        if (showDatePickerDialog) {
+            DatePickerDialog(
+                onDismissRequest = { showDatePickerDialog = false },
+                confirmButton = {
+                    TextButton(onClick = {
+                        showDatePickerDialog = false
+                        // Update the date when "OK" is clicked
+                        datePickerState.selectedDateMillis?.let { millis ->
+                            onDateChange(convertMillisToDateEdit(millis))
+                        }
+                    }) { Text("OK") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDatePickerDialog = false }) { Text("Cancel") }
+                }
             ) {
-                DatePicker(
-                    state = datePickerState,
-                    showModeToggle = false, // ❌ ไม่ให้ toggle input mode
-                )
+                DatePicker(state = datePickerState, showModeToggle = false)
             }
         }
     }
@@ -561,21 +559,7 @@ fun convertDateToMillisEdit(date: String): Long {
     }
 }
 
-@Composable
-fun DatePickerCardEdit(datePickerState: DatePickerState) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(380.dp)
-            .clipToBounds(),
-        shape = RoundedCornerShape(20.dp),
-        elevation = CardDefaults.cardElevation(4.dp)
-    ) {
-        Box(modifier = Modifier.offset(y = (-120).dp)) {
-            DatePicker(state = datePickerState, showModeToggle = false)
-        }
-    }
-}
+// Removed DatePickerCardEdit as it's no longer used
 
 fun convertMillisToDateEdit(millis: Long): String {
     if (millis == 0L) return "No date selected"
