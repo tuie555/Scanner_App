@@ -6,6 +6,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -29,6 +30,7 @@ import com.example.myapplication.setting.components.OptionSelector
 import com.example.myapplication.setting.components.SettingsItem
 import com.example.myapplication.setting.components.SettingsTopBar
 import com.example.myapplication.setting.components.SingleOptionSelector
+import com.example.myapplication.ui.theme.getAdaptiveHorizontalPadding
 import viewmodel.SettingsViewModel
 
 
@@ -68,15 +70,17 @@ fun SettingsScreen(
     val alertModeOptionsList = listOf("Normal mode", "E-Girlfriend Mode", "Aggressive Mode", "Friendly Mode")
     val repeatAlertOptions = listOf("1", "2", "3", "4", "6", "7", "8")
 
+    // Removed LocalConfiguration and related variables for padding
+
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .padding(getAdaptiveHorizontalPadding()) // Use adaptive padding utility
             .verticalScroll(scrollState)
     ) {
         SettingsTopBar(navController)
 
-        Column(modifier = Modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxWidth()) { // Changed from fillMaxSize to fillMaxWidth
             Text("Notification Setting", fontWeight = FontWeight.Bold, fontSize = 20.sp)
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -139,7 +143,9 @@ fun SettingsScreen(
                 )
 
                 viewModel.saveSettings(settings)
-            }) {
+            },
+            modifier = Modifier.fillMaxWidth() // Added fillMaxWidth
+            ) {
                 Text("Save Settings")
             }
 

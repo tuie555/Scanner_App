@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -29,6 +30,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -225,6 +227,7 @@ fun TopBar(
                 }) {
                     Icon(imageVector = Icons.Default.Search, contentDescription = "Search", tint = Color.Black)
                 }
+                Spacer(Modifier.width(4.dp))
             }
         )
 
@@ -266,7 +269,7 @@ fun ProductCard(
         shape = RoundedCornerShape(10.dp),
         backgroundColor = Color.White,
         modifier = Modifier
-            .height(180.dp)
+            .heightIn(min = 160.dp, max = 240.dp) // Modified: Removed fixed height, added min/max
             .fillMaxWidth()
             .border(1.dp, Color(0xFFE0E0E0), RoundedCornerShape(10.dp))
             .clickable { onClick() }, // ✅ ใช้ onClick ที่เรารับเข้ามา
@@ -297,9 +300,14 @@ fun ProductCard(
                 contentAlignment = Alignment.Center
             ) {
 
-
-                SmartImageLoader(imagePath = product.image_url, modifier = Modifier.size(80.dp))
-
+                // Modified: Image to be scalable and centered
+                SmartImageLoader(
+                    imagePath = product.image_url,
+                    modifier = Modifier
+                        .fillMaxWidth(0.7f)
+                        .aspectRatio(1f)
+                        .align(Alignment.Center) // Ensure it's centered within the Box
+                )
 
             }
 
@@ -406,7 +414,7 @@ fun BottomBar(navController: NavHostController,isSettingsScreen: Boolean,
                 imageVector = Icons.Default.List,
                 contentDescription = "Menu",
                 tint = Color.Black,
-                modifier = Modifier.size(52.dp)
+                modifier = Modifier.size(24.dp) // Adjusted size
             )
         }
         Spacer(modifier = Modifier.weight(1f))
@@ -424,7 +432,7 @@ fun BottomBar(navController: NavHostController,isSettingsScreen: Boolean,
             Icon(
                 imageVector = Icons.Default.Add,
                 contentDescription = "Add",
-                modifier = Modifier.size(55.dp), // Size of the icon
+                modifier = Modifier.size(30.dp), // Adjusted size
                 tint = Color.White // Icon color
             )
 
@@ -450,7 +458,7 @@ fun BottomBar(navController: NavHostController,isSettingsScreen: Boolean,
                     imageVector = Icons.Default.Settings,
                     contentDescription = "settings",
                     tint = (if (isClicked) Color.Black else Color(0xFF6B7280)),
-                    modifier = Modifier.size(52.dp)
+                    modifier = Modifier.size(24.dp) // Adjusted size
                 )
             }
 
