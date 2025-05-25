@@ -37,8 +37,7 @@ enum class VisibleSelector {
     Added,
     Added_photo,
     Expiration_Date,
-    Product_Name,
-    SortOption
+    SortByName, SortByDate
 }
 // SandFscreen.kt
 @Composable
@@ -54,7 +53,9 @@ fun SandFscreen(
     val selectedAdded by filterViewModel.selectedAdded.collectAsState()
     val selectedAddedPhoto by filterViewModel.selectedAddedPhoto.collectAsState()
     val selectedExpirationDate by filterViewModel.selectedExpirationDate.collectAsState()
-    val productName by filterViewModel.productName.collectAsState()
+    val selectedSortByName by filterViewModel.selectedSortByName.collectAsState()
+    val selectedSortByDate by filterViewModel.selectedSortByDate.collectAsState()
+
 
     val selectCategory = selectedCategory.joinToString(", ")
     val selectExpiredIn = selectedExpiredIn.joinToString(", ")
@@ -73,10 +74,13 @@ fun SandFscreen(
         if (productsWithoutPhoto.isNotEmpty()) "NO Photo" else null
     )
 
-    val sortOptions = listOf(
+    val SortbyName = listOf(
         "Name (A-Z)",
         "Name (Z-A)",
-        "Expiration Date (Soonest)"
+    )
+    val SortbyExpiration = listOf(
+        "Expiration Date (Soonest)",
+        "Expiration Date (Latest)",
     )
     val selectedSortOption by filterViewModel.selectedSortOption.collectAsState()
 
@@ -211,23 +215,35 @@ fun SandFscreen(
         }
         Spacer(modifier = Modifier.height(16.dp))
         Text("Sort by:", fontWeight = FontWeight.Bold, fontSize = 20.sp)
-        // ในส่วนของ Sort
-// แสดงค่าใน SettingsItem ให้เป็น "" (ว่าง) ถ้าเลือก "None" หรือ "" อยู่
-        SettingsItem("Sort:", if (selectedSortOption == "None" || selectedSortOption.isBlank()) "" else selectedSortOption) {
-            visibleSelector = toggleSelector(visibleSelector, VisibleSelector.SortOption)
+
+// Sort by Name
+        SettingsItem("Product", if (selectedSortByName.isBlank()) "" else selectedSortByName) {
+            visibleSelector = toggleSelector(visibleSelector, VisibleSelector.SortByName)
+        }
+        AnimatedVisibility(visibleSelector == VisibleSelector.SortByName) {
+            SingleOptionSelector(
+                title = "Sort by Product Name:",
+                options = SortbyName,
+                selectedOption = selectedSortByName,
+                onOptionToggle = { option ->
+                    val newOption = if (option == selectedSortByName) "" else option ?: ""
+                    filterViewModel.setSortByName(newOption)
+                }
+            )
         }
 
-        AnimatedVisibility(visibleSelector == VisibleSelector.SortOption) {
+// Sort by Date
+        SettingsItem("Date", if (selectedSortByDate.isBlank()) "" else selectedSortByDate) {
+            visibleSelector = toggleSelector(visibleSelector, VisibleSelector.SortByDate)
+        }
+        AnimatedVisibility(visibleSelector == VisibleSelector.SortByDate) {
             SingleOptionSelector(
-                title = "Sort Options:",
-                options = sortOptions,
-                selectedOption = selectedSortOption,
+                title = "Sort by Expiration Date:",
+                options = SortbyExpiration,
+                selectedOption = selectedSortByDate,
                 onOptionToggle = { option ->
-                    if (option != null) {
-                        // กดซ้ำ option เดิมให้เปลี่ยนเป็นค่าว่าง (ยกเลิกเลือก)
-                        val newOption = if (option == selectedSortOption) "" else option
-                        filterViewModel.setSortOption(newOption)
-                    }
+                    val newOption = if (option == selectedSortByDate) "" else option ?: ""
+                    filterViewModel.setSortByDate(newOption)
                 }
             )
         }

@@ -66,10 +66,24 @@ class FilterViewModel(private val dao: ProductDao) : ViewModel() {
         productName.value = text
     }
 
-    fun setSortOption(option: String) {
+    private val _selectedSortByName = MutableStateFlow("")
+    val selectedSortByName: StateFlow<String> = _selectedSortByName
+
+    fun setSortByName(option: String) {
+        _selectedSortByName.value = option
         _selectedSortOption.value = option
         filterProducts()
     }
+
+    private val _selectedSortByDate = MutableStateFlow("")
+    val selectedSortByDate: StateFlow<String> = _selectedSortByDate
+
+    fun setSortByDate(option: String) {
+        _selectedSortByDate.value = option
+        _selectedSortOption.value = option
+        filterProducts()
+    }
+
 
     fun getFilteredByPhoto(option: String, dao: ProductDao): Flow<List<ProductData>> {
         return when (option) {
@@ -135,13 +149,21 @@ class FilterViewModel(private val dao: ProductDao) : ViewModel() {
                     matchesPhoto && matchesExpirationDate && matchesSearch
         }
 
+
         val sorted = when (_selectedSortOption.value) {
             "Name (A-Z)" -> filtered.sortedBy { it.product_name.lowercase() }
             "Name (Z-A)" -> filtered.sortedByDescending { it.product_name.lowercase() }
-            "Expiration Date (Soonest)" -> filtered.sortedBy { it.expiration_date ?: Long.MAX_VALUE }
-            "Expiration Date (Latest)" -> filtered.sortedByDescending { it.expiration_date ?: Long.MIN_VALUE }
+
+            "Expiration Date (Latest)" -> filtered
+                .filter { it.expiration_date != null && it.expiration_date > now }
+                .sortedBy { it.expiration_date }
+
+            "Expiration Date (Soonest)" -> filtered
+                .filter { it.expiration_date != null && it.expiration_date > now }
+
             else -> filtered
         }
+
 
         filteredProducts.value = sorted
     }
