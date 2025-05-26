@@ -34,16 +34,19 @@ class ExpiryCheckWorker(
         val settingsDao = db.settingsDao()
 
         val settings = settingsDao.getSettings()
+
         if (settings == null) {
             Log.w("ExpiryWorker", "⚠️ Settings not found.")
             return Result.success()
         }
 
         val alertDaysList = parseAlertDays(settings.alertBeforeExpiry)
+        val alertMode = settings.alertMode // 🆕 ดึงโหมดจาก Settings
         val productList = productDao.getAllProducts().first()
 
         Log.d("ExpiryWorker", "🧾 Products found: ${productList.size}")
         Log.d("ExpiryWorker", "📢 Alert days list: $alertDaysList")
+        Log.d("ExpiryWorker", "🎛️ Alert mode: $alertMode")
 
         for (product in productList) {
             val daysLeft = product.daysUntilExpiry()
@@ -60,12 +63,22 @@ class ExpiryCheckWorker(
 
                 daysLeft < 0 -> {
                     Log.i("ExpiryWorker", "💀 ${product.product_name} has already expired (${kotlin.math.abs(daysLeft)} days ago)")
-                    sendNotification(context = applicationContext, product = product, mode = "expired")
+                    sendNotification(
+                        context = applicationContext,
+                        product = product,
+                        mode = alertMode, // 👈 ส่ง mode จาก settings
+                        status = "expired"
+                    )
                 }
 
                 alertDaysList.contains(daysLeft.toInt()) -> {
                     Log.d("ExpiryWorker", "🔔 Alert: ${product.product_name} will expire in $daysLeft day(s)")
-                    sendNotification(context = applicationContext, product = product, mode = "expiry")
+                    sendNotification(
+                        context = applicationContext,
+                        product = product,
+                        mode = alertMode, // 👈 ส่ง mode จาก settings
+                        status = "expiry"
+                    )
                 }
 
                 daysLeft >= 0 -> {
@@ -76,16 +89,14 @@ class ExpiryCheckWorker(
                     Log.w("ExpiryWorker", "❓ Unable to process ${product.product_name} (daysLeft = $daysLeft)")
                 }
             }
-
-
         }
 
         return Result.success()
     }
-
 }
+
 @RequiresApi(Build.VERSION_CODES.O)
-fun sendNotification(context: Context, product: ProductData, mode: String, style: String = "Normal") {
+fun sendNotification(context: Context, product: ProductData, mode: String, status: String) {
     val currentHour = LocalTime.now().hour
     if (currentHour !in 9..21) {
         Log.d("ExpiryWorker", "⏰ Outside notification hours (9–21), skipping notification.")
@@ -101,17 +112,16 @@ fun sendNotification(context: Context, product: ProductData, mode: String, style
     }
 
     val daysLeft = product.daysUntilExpiry() ?: return
-    val message = buildNotificationMessage(product.product_name, daysLeft.toInt(), mode, style)
+    val message = buildNotificationMessage(product.product_name, daysLeft.toInt(), status, mode)
 
-
-    val title = when (mode) {
-        "expired" -> when (style) {
+    val title = when (status) {
+        "expired" -> when (mode) {
             "E-Girlfriend" -> "😢 It's too late..."
             "Aggressive" -> "💀 You messed up!"
             "Friendly" -> "⏰ Just a heads-up!"
             else -> "⚠️ Product Expired!"
         }
-        else -> when (style) {
+        else -> when (mode) {
             "E-Girlfriend" -> "💖 Don't forget!"
             "Aggressive" -> "👊 Get moving!"
             "Friendly" -> "😊 Heads-up!"
@@ -129,33 +139,39 @@ fun sendNotification(context: Context, product: ProductData, mode: String, style
     notificationManager.notify(product.id, notification)
 }
 
-fun buildNotificationMessage(productName: String, daysLeft: Int, mode: String, style: String): String {
+
+
+fun buildNotificationMessage(productName: String, daysLeft: Int, status: String, style: String): String {
+    Log.d("ExpiryWorker", "📨 style = $style | status = $status")
+
     return when (style) {
-        "E-Girlfriend" -> when (mode) {
+        "E-Girlfriend" -> when (status) {
             "expired" -> "You forgot again, didn’t you? 😢 $productName expired ${kotlin.math.abs(daysLeft)} day(s) ago!"
             "expiry" -> "Just $daysLeft day(s) before $productName expires! Take care 💖"
             else -> "$productName status unknown, but I’m still thinking of you 💭"
         }
 
-        "Aggressive" -> when (mode) {
+        "Aggressive" -> when (status) {
             "expired" -> "Hey! $productName expired ${kotlin.math.abs(daysLeft)} day(s) ago! Are you blind?"
             "expiry" -> "$productName will expire in $daysLeft day(s) — use it or lose it!"
             else -> "$productName? Figure it out!"
         }
 
-        "Friendly" -> when (mode) {
+        "Friendly" -> when (status) {
             "expired" -> "Hey, $productName expired ${kotlin.math.abs(daysLeft)} day(s) ago. Just a heads-up!"
             "expiry" -> "Heads-up! $productName will expire in $daysLeft day(s)."
             else -> "$productName status unknown — have a nice day!"
         }
 
-        else -> when (mode) {
+        else -> when (status) {
             "expired" -> "Product: $productName expired ${kotlin.math.abs(daysLeft)} day(s) ago"
             "expiry" -> "Product: $productName will expire in $daysLeft day(s)"
             else -> "Unknown status for: $productName"
         }
     }
 }
+
+
 
 
 

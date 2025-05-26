@@ -112,22 +112,6 @@ fun SettingsScreen(
             }
 
             Spacer(modifier = Modifier.height(32.dp))
-            Text("Email Subscription", fontWeight = FontWeight.Bold, fontSize = 20.sp)
-
-            SettingsItem("Subscription Status:", "Not Subscribed", showIcon = false) {}
-
-            Email(
-                label = "Email:",
-                productName = email,
-                onProductNameChange = { email = it },
-                isVisible = visibleSelector == VisibleSelector.ChangeMail,
-                onToggleVisible = {
-                    visibleSelector = if (visibleSelector == VisibleSelector.ChangeMail)
-                        VisibleSelector.NONE else VisibleSelector.ChangeMail
-                }
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
 
             Button(onClick = {
                 val settings = Settings(

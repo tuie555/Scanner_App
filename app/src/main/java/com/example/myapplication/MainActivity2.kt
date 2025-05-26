@@ -2,6 +2,7 @@ package com.example.myapplication
 import Databases.Productviewmodel
 import Databases.ProductData
 import Databases.daysUntilExpiry
+import ExpiryCheckWorker
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -103,7 +104,8 @@ import java.time.ZoneId
 import java.util.concurrent.TimeUnit
 import androidx.appcompat.app.AlertDialog
 import android.provider.Settings
-
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 
 
 class MainActivity2 : ComponentActivity() {
@@ -112,6 +114,17 @@ class MainActivity2 : ComponentActivity() {
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val db = InventoryDatabase.getDatabase(this)
+        val settingsDao = db.settingsDao()
+
+        lifecycleScope.launch {
+            val settings = settingsDao.getSettings()
+
+            if (settings != null) {
+                val repeatHours = settings.repeatAlert.toIntOrNull() ?: 4
+                scheduleRepeatingWork(this@MainActivity2, repeatHours)
+            }
+        }
 
         requestNotificationPermission()
 
@@ -195,12 +208,15 @@ class MainActivity2 : ComponentActivity() {
         }
     }
     private fun requestNotificationPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS)
-                != PackageManager.PERMISSION_GRANTED
-            ) {
-                requestPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
-            }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS)
+            != PackageManager.PERMISSION_GRANTED
+        ) {
+            // เรียก launcher เพื่อขอ permission อย่างถูกต้อง
+            requestPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+        } else {
+            // ได้รับ permission แล้ว — เรียกใช้ testNotification ได้เลย
+            testNotification()
         }
     }
 
@@ -210,10 +226,18 @@ class MainActivity2 : ComponentActivity() {
     ) { isGranted: Boolean ->
         if (isGranted) {
             Log.d("Permission", "✅ Notification permission granted")
+            testNotification()
         } else {
             Log.w("Permission", "❌ Notification permission denied")
         }
     }
+
+    // สมมุติว่าเป็นฟังก์ชันแสดง Notification
+    private fun testNotification() {
+        // แสดง notification หรือ logic อื่น ๆ
+        Log.d("Notification", "🔔 Showing test notification")
+    }
+
 }
 
 @Composable
@@ -535,6 +559,17 @@ fun BottomBar(navController: NavHostController,isSettingsScreen: Boolean,
 
         }
     }
+fun scheduleRepeatingWork(context: Context, intervalHours: Int) {
+    val workRequest = PeriodicWorkRequestBuilder<ExpiryCheckWorker>(
+        intervalHours.toLong(), TimeUnit.HOURS
+    ).build()
+
+    WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+        "ExpiryCheckWork",
+        ExistingPeriodicWorkPolicy.REPLACE,
+        workRequest
+    )
+}
 
 
 
