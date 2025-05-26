@@ -67,7 +67,7 @@ fun SettingsScreen(
         "1 day", "2 days", "3 days", "4 days", "5 days", "1 week", "2 weeks",
         "3 weeks", "4 weeks", "1 month", "2 months", "3 months", "6 months"
     )
-    val alertModeOptionsList = listOf("Normal mode", "E-Girlfriend Mode", "Aggressive Mode", "Friendly Mode")
+    val alertModeOptionsList = listOf("Normal", "E-Girlfriend", "Aggressive", "Friendly")
     val repeatAlertOptions = listOf("1", "2", "3", "4", "6", "7", "8")
 
     // Removed LocalConfiguration and related variables for padding
@@ -116,22 +116,6 @@ fun SettingsScreen(
             }
 
             Spacer(modifier = Modifier.height(32.dp))
-            Text("Email Subscription", fontWeight = FontWeight.Bold, fontSize = 20.sp)
-
-            SettingsItem("Subscription Status:", "Not Subscribed", showIcon = false) {}
-
-            Email(
-                label = "Email:",
-                productName = email,
-                onProductNameChange = { email = it },
-                isVisible = visibleSelector == VisibleSelector.ChangeMail,
-                onToggleVisible = {
-                    visibleSelector = if (visibleSelector == VisibleSelector.ChangeMail)
-                        VisibleSelector.NONE else VisibleSelector.ChangeMail
-                }
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
 
             Button(onClick = {
                 val settings = Settings(

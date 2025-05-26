@@ -1,7 +1,14 @@
 package com.example.myapplication
 import Databases.Productviewmodel
 import Databases.ProductData
+import Databases.daysUntilExpiry
+import ExpiryCheckWorker
+
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Build
@@ -9,6 +16,7 @@ import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -78,8 +86,28 @@ import coil.compose.rememberAsyncImagePainter
 import com.example.myapplication.barcode.Edit
 import com.example.myapplication.barcode.Scanner
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.core.app.ActivityCompat
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
+import androidx.work.Constraints
+import androidx.work.CoroutineWorker
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.WorkerParameters
 import com.example.myapplication.sortandfilter.FilterViewModel
 import com.example.myapplication.sortandfilter.FilterViewModelFactory
+import kotlinx.coroutines.flow.first
+import java.time.Instant
+import java.time.ZoneId
+import java.util.concurrent.TimeUnit
+import androidx.appcompat.app.AlertDialog
+import android.provider.Settings
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 
 
 class MainActivity2 : ComponentActivity() {
@@ -88,10 +116,38 @@ class MainActivity2 : ComponentActivity() {
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val db = InventoryDatabase.getDatabase(this)
+        val settingsDao = db.settingsDao()
+
+        lifecycleScope.launch {
+            val settings = settingsDao.getSettings()
+
+            if (settings != null) {
+                val repeatHours = settings.repeatAlert.toIntOrNull() ?: 4
+                scheduleRepeatingWork(this@MainActivity2, repeatHours)
+            }
+        }
+
+        requestNotificationPermission()
+
+        if (!NotificationManagerCompat.from(this).areNotificationsEnabled()) {
+            AlertDialog.Builder(this)
+                .setTitle("Notification is Disabled")
+                .setMessage("Please enable notifications in system settings to receive alerts.")
+                .setPositiveButton("Go to Settings") { _, _ ->
+                    val intent = Intent().apply {
+                        action = Settings.ACTION_APP_NOTIFICATION_SETTINGS
+                        putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+                    }
+                    startActivity(intent)
+                }
+                .setNegativeButton("Cancel", null)
+                .show()
+        }
+
+
 
         setContent {
-
-
             val navController = rememberNavController()
             var isSettingsScreen by remember { mutableStateOf(false) }
             var searchText by remember { mutableStateOf("") }
@@ -106,6 +162,22 @@ class MainActivity2 : ComponentActivity() {
             )
             LaunchedEffect(searchText) {
                 filterViewModel.setSearchText(searchText)
+                filterViewModel.setSearchText(searchText)
+
+                val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                val channelId = "test_channel"
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    val channel = NotificationChannel(channelId, "Test Channel", NotificationManager.IMPORTANCE_HIGH)
+                    notificationManager.createNotificationChannel(channel)
+                }
+
+                val notification = NotificationCompat.Builder(context, channelId)
+                    .setSmallIcon(android.R.drawable.ic_dialog_alert)
+                    .setContentTitle("Test Notification")
+                    .setContentText("This is a test notification.")
+                    .build()
+
+                notificationManager.notify(1, notification)
             }
 
             Scaffold(
@@ -137,6 +209,37 @@ class MainActivity2 : ComponentActivity() {
             }
         }
     }
+    private fun requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS)
+            != PackageManager.PERMISSION_GRANTED
+        ) {
+            // เรียก launcher เพื่อขอ permission อย่างถูกต้อง
+            requestPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+        } else {
+            // ได้รับ permission แล้ว — เรียกใช้ testNotification ได้เลย
+            testNotification()
+        }
+    }
+
+    // Optional: ตรวจผลการขอ permission
+    private val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        if (isGranted) {
+            Log.d("Permission", "✅ Notification permission granted")
+            testNotification()
+        } else {
+            Log.w("Permission", "❌ Notification permission denied")
+        }
+    }
+
+    // สมมุติว่าเป็นฟังก์ชันแสดง Notification
+    private fun testNotification() {
+        // แสดง notification หรือ logic อื่น ๆ
+        Log.d("Notification", "🔔 Showing test notification")
+    }
+
 }
 
 @Composable
@@ -451,5 +554,19 @@ fun BottomBar(navController: NavHostController,isSettingsScreen: Boolean,
 
         }
     }
+fun scheduleRepeatingWork(context: Context, intervalHours: Int) {
+    val workRequest = PeriodicWorkRequestBuilder<ExpiryCheckWorker>(
+        intervalHours.toLong(), TimeUnit.HOURS
+    ).build()
+
+    WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+        "ExpiryCheckWork",
+        ExistingPeriodicWorkPolicy.REPLACE,
+        workRequest
+    )
+}
+
+
+
 
 
