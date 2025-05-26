@@ -7,6 +7,7 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.compose.compiler) apply false
     alias(libs.plugins.sonarqube)
+    alias(libs.plugins.versions)
 }
 sonar {
     properties {

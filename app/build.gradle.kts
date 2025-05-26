@@ -70,8 +70,8 @@ dependencies {
     implementation(libs.material)
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
-    val camerax_version = "1.5.0-alpha05"
-    val ktor_version = "3.0.3"
+    val camerax_version = "1.5.0-beta01"
+    val ktor_version = "3.1.3"
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -81,7 +81,7 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
-    implementation("io.ktor:ktor-client-okhttp:2.3.7")
+    implementation("io.ktor:ktor-client-okhttp:3.1.3")
     implementation("com.google.mlkit:barcode-scanning:17.3.0")
     implementation("androidx.camera:camera-mlkit-vision:${camerax_version}")
     implementation("androidx.camera:camera-core:${camerax_version}")
@@ -89,49 +89,49 @@ dependencies {
     implementation("androidx.camera:camera-lifecycle:${camerax_version}")
     implementation("androidx.camera:camera-view:${camerax_version}")
     implementation("androidx.camera:camera-extensions:${camerax_version}")
-    implementation("androidx.navigation:navigation-compose:2.4.0")
+    implementation("androidx.navigation:navigation-compose:2.9.0")
     implementation("io.ktor:ktor-client-core:$ktor_version")
     implementation("io.ktor:ktor-client-android:$ktor_version")
     implementation("io.ktor:ktor-client-logging:$ktor_version")
-    implementation("org.slf4j:slf4j-api:2.0.7")
+    implementation("org.slf4j:slf4j-api:2.0.17")
     implementation("io.ktor:ktor-client-content-negotiation:$ktor_version")
     implementation("io.ktor:ktor-serialization-kotlinx-json:$ktor_version")
-    implementation("io.ktor:ktor-client-cio:3.0.3")
-    implementation("io.ktor:ktor-client-plugins:3.0.3")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.3")
+    implementation("io.ktor:ktor-client-cio:3.1.3")
+    implementation("io.ktor:ktor-client-plugins:3.1.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1")
     implementation("androidx.room:room-runtime:2.7.1")
     implementation("androidx.room:room-ktx:2.7.1")
     ksp("androidx.room:room-compiler:2.7.1")
-    implementation ("androidx.work:work-runtime-ktx:2.9.0")
-    implementation("io.ktor:ktor-client-core:2.3.4")
-    implementation("io.ktor:ktor-client-cio:2.3.4")
+    implementation ("androidx.work:work-runtime-ktx:2.10.1")
+    implementation("io.ktor:ktor-client-core:3.1.3")
+    implementation("io.ktor:ktor-client-cio:3.1.3")
     implementation(libs.kotlinx.coroutines.core) // หรือใหม่กว่านี้
 
 // สำหรับ JSON และ ContentNegotiation
-    implementation("io.ktor:ktor-client-content-negotiation:2.3.4")
-    implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.4")
+    implementation("io.ktor:ktor-client-content-negotiation:3.1.3")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:3.1.3")
 
 // Kotlinx serialization
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.1")// สำหรับ Ktor client
-    implementation("io.ktor:ktor-client-core:2.3.4")
-    implementation("io.ktor:ktor-client-cio:2.3.4")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1")// สำหรับ Ktor client
+    implementation("io.ktor:ktor-client-core:3.1.3")
+    implementation("io.ktor:ktor-client-cio:3.1.3")
 
 // สำหรับ JSON และ ContentNegotiation
-    implementation("io.ktor:ktor-client-content-negotiation:2.3.4")
-    implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.4")
-    implementation ("androidx.compose.material3:material3:1.2.0")
+    implementation("io.ktor:ktor-client-content-negotiation:3.1.3")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:3.1.3")
+    implementation ("androidx.compose.material3:material3:1.3.2")
 // Kotlinx serialization
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1")
 
     // Jetpack Compose Dependencies
-    implementation("androidx.compose.ui:ui:1.3.0")
-    implementation("androidx.compose.material:material:1.3.0")
-    implementation("androidx.compose.material:material-icons-extended:1.3.0")
-    implementation("androidx.compose.material3:material3:1.0.0")
-    implementation("androidx.compose.ui:ui-tooling-preview:1.3.0")
-    implementation("androidx.compose.foundation:foundation:1.3.0")
-    implementation("androidx.activity:activity-compose:1.6.0")
-    implementation("io.coil-kt:coil-compose:2.2.2")
+    implementation("androidx.compose.ui:ui:1.8.2")
+    implementation("androidx.compose.material:material:1.8.2")
+    implementation("androidx.compose.material:material-icons-extended:1.7.8")
+    implementation("androidx.compose.material3:material3:1.3.2")
+    implementation("androidx.compose.ui:ui-tooling-preview:1.8.2")
+    implementation("androidx.compose.foundation:foundation:1.8.2")
+    implementation("androidx.activity:activity-compose:1.10.1")
+    implementation("io.coil-kt:coil-compose:2.7.0")
     implementation ("androidx.core:core-ktx:1.16.0")
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
