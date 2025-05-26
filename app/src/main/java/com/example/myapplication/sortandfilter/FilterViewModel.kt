@@ -2,6 +2,7 @@ package com.example.myapplication.sortandfilter
 
 import Databases.ProductDao
 import Databases.ProductData
+import android.annotation.SuppressLint
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.Flow
@@ -10,6 +11,10 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.Instant
+import java.util.Locale
 
 class FilterViewModel(private val dao: ProductDao) : ViewModel() {
 
@@ -108,6 +113,7 @@ class FilterViewModel(private val dao: ProductDao) : ViewModel() {
         }
     }
 
+    @SuppressLint("NewApi")
     private fun filterProducts() {
         val currentProducts = allProducts.value
         val now = System.currentTimeMillis()
@@ -126,9 +132,14 @@ class FilterViewModel(private val dao: ProductDao) : ViewModel() {
                     }
                     )
 
+
+            val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy", Locale.getDefault())
             val matchesAdded = selectedAdded.value.isEmpty() || (
                     addDay != null && selectedAdded.value.contains(
-                        java.text.SimpleDateFormat("dd/MM/yyyy").format(java.util.Date(addDay))
+                        Instant.ofEpochMilli(addDay)
+                            .atZone(ZoneId.systemDefault())
+                            .toLocalDate()
+                            .format(formatter)
                     )
                     )
 
