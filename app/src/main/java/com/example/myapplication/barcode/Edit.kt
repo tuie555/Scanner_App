@@ -199,8 +199,8 @@ fun ProductScreen1(product: ProductData?, viewModel: Addviewmodel,navController:
             )
 
             DeleteProductButton(
-                    productId = product.id,
-                    viewModel = viewModel,
+                productId = product.id,
+                viewModel = viewModel,
             )
             Spacer(modifier = Modifier.height(16.dp))
         }

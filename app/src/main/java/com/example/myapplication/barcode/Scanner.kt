@@ -75,9 +75,10 @@ fun CameraPreview( modifier: Modifier = Modifier) {
         factory = { context ->
             PreviewView(context).apply {
                 // You can set up any additional properties for the PreviewView here
+                scaleType = PreviewView.ScaleType.FILL_CENTER
             }
         },
-        modifier = modifier
+        modifier = modifier.fillMaxSize()
     ) { previewView ->
         startCamera(previewView, previewView.context)
     }

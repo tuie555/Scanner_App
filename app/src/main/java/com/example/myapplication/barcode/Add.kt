@@ -154,8 +154,8 @@ fun ProductScreen(barcode: String, viewModel: Addviewmodel) {
                 Log.d("Databases.ProductData", "Name: $name, Categories: $categories, Image URL: $imageUrl")
             }
                 ?: run {
-                errorMessage = "Product not found or failed to fetch."
-            }
+                    errorMessage = "Product not found or failed to fetch."
+                }
         } catch (e: Exception) {
             errorMessage = "Error loading product: ${e.message}"
             Log.e("ProductScreen", "Error loading product", e)
