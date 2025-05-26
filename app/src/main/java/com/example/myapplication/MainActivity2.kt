@@ -1,10 +1,13 @@
 package com.example.myapplication
 import Databases.Productviewmodel
 import Databases.ProductData
+import Databases.daysUntilExpiry
+
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Build
@@ -12,6 +15,7 @@ import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -79,9 +83,27 @@ import coil.compose.rememberAsyncImagePainter
 import com.example.myapplication.barcode.Edit
 import com.example.myapplication.barcode.Scanner
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
+import androidx.work.Constraints
+import androidx.work.CoroutineWorker
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.WorkerParameters
 import com.example.myapplication.sortandfilter.FilterViewModel
 import com.example.myapplication.sortandfilter.FilterViewModelFactory
+import kotlinx.coroutines.flow.first
+import java.time.Instant
+import java.time.ZoneId
+import java.util.concurrent.TimeUnit
+import androidx.appcompat.app.AlertDialog
+import android.provider.Settings
+
 
 
 class MainActivity2 : ComponentActivity() {
@@ -91,9 +113,26 @@ class MainActivity2 : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        requestNotificationPermission()
+
+        if (!NotificationManagerCompat.from(this).areNotificationsEnabled()) {
+            AlertDialog.Builder(this)
+                .setTitle("Notification is Disabled")
+                .setMessage("Please enable notifications in system settings to receive alerts.")
+                .setPositiveButton("Go to Settings") { _, _ ->
+                    val intent = Intent().apply {
+                        action = Settings.ACTION_APP_NOTIFICATION_SETTINGS
+                        putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+                    }
+                    startActivity(intent)
+                }
+                .setNegativeButton("Cancel", null)
+                .show()
+        }
+
+
+
         setContent {
-
-
             val navController = rememberNavController()
             var isSettingsScreen by remember { mutableStateOf(false) }
             var searchText by remember { mutableStateOf("") }
@@ -153,6 +192,26 @@ class MainActivity2 : ComponentActivity() {
                     filterViewModel = filterViewModel
                 )
             }
+        }
+    }
+    private fun requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED
+            ) {
+                requestPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+    }
+
+    // Optional: ตรวจผลการขอ permission
+    private val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        if (isGranted) {
+            Log.d("Permission", "✅ Notification permission granted")
+        } else {
+            Log.w("Permission", "❌ Notification permission denied")
         }
     }
 }
@@ -476,5 +535,8 @@ fun BottomBar(navController: NavHostController,isSettingsScreen: Boolean,
 
         }
     }
+
+
+
 
 

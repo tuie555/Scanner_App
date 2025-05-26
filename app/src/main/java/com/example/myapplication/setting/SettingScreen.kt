@@ -65,7 +65,7 @@ fun SettingsScreen(
         "1 day", "2 days", "3 days", "4 days", "5 days", "1 week", "2 weeks",
         "3 weeks", "4 weeks", "1 month", "2 months", "3 months", "6 months"
     )
-    val alertModeOptionsList = listOf("Normal mode", "E-Girlfriend Mode", "Aggressive Mode", "Friendly Mode")
+    val alertModeOptionsList = listOf("Normal", "E-Girlfriend", "Aggressive", "Friendly")
     val repeatAlertOptions = listOf("1", "2", "3", "4", "6", "7", "8")
 
     Column(
