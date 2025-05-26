@@ -171,9 +171,6 @@ fun ProductListScreen(
                     val intent = Intent(navController.context, Edit::class.java)
                     intent.putExtra("productData", product)
                     navController.context.startActivity(intent)
-                },
-                onMoreOptionsClick = { selectedProduct ->
-                    Log.d("ProductListScreen", "More options clicked for ${selectedProduct.product_name}")
                 }
             )
         }
@@ -263,7 +260,6 @@ fun TopBar(
 fun ProductCard(
     product: ProductData,
     onClick: () -> Unit,
-    onMoreOptionsClick: (ProductData) -> Unit
 ) {
     Card(
         shape = RoundedCornerShape(10.dp),
@@ -329,16 +325,7 @@ fun ProductCard(
                     )
                 }
 
-                IconButton(
-                    onClick = { onMoreOptionsClick(product) }, // ✅ ส่ง product กลับ
-                    modifier = Modifier.size(28.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.MoreVert,
-                        contentDescription = "More options",
-                        tint = Color.Black
-                    )
-                }
+
             }
         }
     }
