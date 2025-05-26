@@ -24,7 +24,6 @@ data class ProductData(
     val notes: String
 ) : Serializable // ✅ เพิ่มตรงนี้
 
-@RequiresApi(Build.VERSION_CODES.O)
 fun ProductData.daysUntilExpiry(): Long? {
     val expiryDate = expiration_date ?: return null
 

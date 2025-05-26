@@ -17,7 +17,6 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -112,7 +111,6 @@ import kotlinx.coroutines.launch
 
 class MainActivity2 : ComponentActivity() {
 
-    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val db = InventoryDatabase.getDatabase(this)
@@ -165,10 +163,10 @@ class MainActivity2 : ComponentActivity() {
 
                 val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
                 val channelId = "test_channel"
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    val channel = NotificationChannel(channelId, "Test Channel", NotificationManager.IMPORTANCE_HIGH)
+
+                val channel = NotificationChannel(channelId, "Test Channel", NotificationManager.IMPORTANCE_HIGH)
                     notificationManager.createNotificationChannel(channel)
-                }
+
 
                 val notification = NotificationCompat.Builder(context, channelId)
                     .setSmallIcon(android.R.drawable.ic_dialog_alert)
@@ -514,7 +512,14 @@ fun BottomBar(navController: NavHostController,isSettingsScreen: Boolean,
                 .size(width = 100.dp, height = 60.dp) // Set width and height for oval shape
                 .clip(RoundedCornerShape(28.dp)) // Use RoundedCornerShape to create an oval
                 .background(blue400) // Background color
-                .clickable(onClick = { context.startActivity(Intent(context, Scanner::class.java)) }), // Handle click
+                .clickable(onClick = {
+                    context.startActivity(
+                        Intent(
+                            context,
+                            Scanner::class.java
+                        )
+                    )
+                }), // Handle click
             contentAlignment = Alignment.Center // Center the icon
         ) {
 
