@@ -143,6 +143,7 @@ class FilterViewModel(private val dao: ProductDao) : ViewModel() {
                     )
                     )
 
+
             val matchesPhoto = selectedAddedPhoto.value.isEmpty() || (
                     selectedAddedPhoto.value.contains("Added Photo") && product.image_url.isNotBlank() ||
                             selectedAddedPhoto.value.contains("NO Photo") && product.image_url.isBlank()
