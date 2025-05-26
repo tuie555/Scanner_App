@@ -25,7 +25,6 @@ class ExpiryCheckWorker(
     workerParams: WorkerParameters
 ) : CoroutineWorker(context, workerParams) {
 
-    @RequiresApi(Build.VERSION_CODES.O)
     override suspend fun doWork(): Result {
         Log.d("ExpiryWorker", "✅ Worker is running...")
 
@@ -95,7 +94,6 @@ class ExpiryCheckWorker(
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.O)
 fun sendNotification(context: Context, product: ProductData, mode: String, status: String) {
     val currentHour = LocalTime.now().hour
     if (currentHour !in 9..21) {
@@ -106,10 +104,9 @@ fun sendNotification(context: Context, product: ProductData, mode: String, statu
     val channelId = "expiry_channel_v2"
     val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+
         val channel = NotificationChannel(channelId, "Expiry Alerts", NotificationManager.IMPORTANCE_HIGH)
         notificationManager.createNotificationChannel(channel)
-    }
 
     val daysLeft = product.daysUntilExpiry() ?: return
     val message = buildNotificationMessage(product.product_name, daysLeft.toInt(), status, mode)
