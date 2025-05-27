@@ -138,7 +138,7 @@ fun SandFscreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         // Category
-        SettingsItem("Category:", selectCategory) {
+        SettingsItem("Category", selectCategory) {
             visibleSelector = toggleSelector(visibleSelector, VisibleSelector.CATEGORY)
         }
         AnimatedVisibility(visibleSelector == VisibleSelector.CATEGORY) {
@@ -149,7 +149,7 @@ fun SandFscreen(
         }
 
         // Expired In
-        SettingsItem("Expired in:", selectedExpiredIn.firstOrNull()?.let { expiredInLabels.getOrNull(expiredInValues.indexOf(it)) } ?: "") {
+        SettingsItem("Expired in", selectedExpiredIn.firstOrNull()?.let { expiredInLabels.getOrNull(expiredInValues.indexOf(it)) } ?: "") {
             visibleSelector = toggleSelector(visibleSelector, VisibleSelector.Expired_in)
         }
         AnimatedVisibility(visibleSelector == VisibleSelector.Expired_in) {
@@ -166,7 +166,7 @@ fun SandFscreen(
         }
 
         // Added
-        SettingsItem("Added:", selectAdded) {
+        SettingsItem("Added", selectAdded) {
             visibleSelector = toggleSelector(visibleSelector, VisibleSelector.Added)
         }
         AnimatedVisibility(visibleSelector == VisibleSelector.Added) {
@@ -181,7 +181,7 @@ fun SandFscreen(
         }
 
         // Added Photo
-        SettingsItem("Added Photo:", selectAddedPhoto) {
+        SettingsItem("Added Photo", selectAddedPhoto) {
             visibleSelector = toggleSelector(visibleSelector, VisibleSelector.Added_photo)
         }
         AnimatedVisibility(visibleSelector == VisibleSelector.Added_photo) {
@@ -196,7 +196,7 @@ fun SandFscreen(
         }
 
         // Expiration Date
-        SettingsItem("Expiration Date:", selectedExpirationDate.firstOrNull()?.let { expirationDateLabels[it] } ?: "") {
+        SettingsItem("Expiration Date", selectedExpirationDate.firstOrNull()?.let { expirationDateLabels[it] } ?: "") {
             visibleSelector = toggleSelector(visibleSelector, VisibleSelector.Expiration_Date)
         }
         AnimatedVisibility(visibleSelector == VisibleSelector.Expiration_Date) {
