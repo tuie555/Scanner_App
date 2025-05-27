@@ -399,7 +399,7 @@ fun BackButton(onBackClick: () -> Unit) {
                 modifier = Modifier.size(20.dp)
             )
             Spacer(modifier = Modifier.width(4.dp))
-            Text(text = "Back", fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+
         }
     }
 }
@@ -746,7 +746,7 @@ fun SettingsScreenadd(
                                 selectAlertbeforeEX.add(option)
                             }
 
-                            val updatedCategories = selectAlertbeforeEX.joinToString(", ") { "en:$it" }
+                            val updatedCategories = selectAlertbeforeEX.joinToString(", ") { it }
                             onValueChange(updatedCategories)
                         }
                     }
