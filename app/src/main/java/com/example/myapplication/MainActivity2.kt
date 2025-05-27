@@ -13,12 +13,7 @@ import android.content.pm.PackageManager
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Build
-import android.os.Bundle
-import android.util.Log
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.annotation.RequiresApi
+
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -100,7 +95,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import androidx.core.content.ContextCompat
+
 import androidx.work.Constraints
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingPeriodicWorkPolicy
@@ -123,6 +118,19 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.MaterialTheme.colors
+
+
+import android.os.Bundle
+import android.util.Log
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
+import com.google.android.play.core.integrity.IntegrityManager
+import com.google.android.play.core.integrity.IntegrityManagerFactory
+import com.google.android.play.core.integrity.IntegrityTokenRequest
+import com.google.android.gms.tasks.Task
+import com.google.android.play.core.integrity.IntegrityTokenResponse
 
 
 class MainActivity2 : ComponentActivity() {
@@ -148,11 +156,32 @@ class MainActivity2 : ComponentActivity() {
             testNotification()
         }
     }
-    @RequiresApi(Build.VERSION_CODES.O)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val db = InventoryDatabase.getDatabase(this)
         val settingsDao = db.settingsDao()
+
+//        val integrityManager = IntegrityManagerFactory.create(this)
+//
+//        val integrityTokenRequest = IntegrityTokenRequest.builder()
+//            .setNonce("your_random_nonce_here")
+//            .build()
+//
+//        val integrityTask: Task<IntegrityTokenResponse> = integrityManager.requestIntegrityToken(integrityTokenRequest)
+//
+//        integrityTask.addOnSuccessListener { response: IntegrityTokenResponse ->
+//            val token = response.token()
+//            Log.d("PlayIntegrity", "Token: $token")
+//            // TODO: Send token to your backend for validation
+//        }
+//
+//        integrityTask.addOnFailureListener { e: Exception ->
+//            Log.e("PlayIntegrity", "Error requesting token: ${e.message}")
+//        }
+
+
+
 
         lifecycleScope.launch {
             val settings = settingsDao.getSettings()

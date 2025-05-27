@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.compose.compiler)
     id("com.google.devtools.ksp") version "2.1.20-2.0.1"
+    alias(libs.plugins.google.gms.google.services)
 
 }
 
@@ -66,10 +67,16 @@ android {
 
 dependencies {
 
+
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
+    implementation(libs.firebase.auth)
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services.auth)
+    implementation(libs.googleid)
+    implementation(libs.core.ktx)
     val camerax_version = "1.5.0-beta01"
     val ktor_version = "3.1.3"
 
@@ -141,4 +148,10 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+
+    // Play Integrity API
+    implementation ("com.google.android.play:integrity:1.3.0")
+
+    // Play Core common tasks
+    implementation("com.google.android.gms:play-services-tasks:18.0.2")
 }
