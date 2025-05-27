@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.example.myapplication"
+    package="com.LingTH.fridge"
     xmlns:tools="http://schemas.android.com/tools">
 
     <!-- Permissions -->
@@ -16,7 +16,7 @@
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@drawable/iconapp"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
@@ -26,7 +26,7 @@
 
         <!-- Launcher Activity -->
         <activity
-            android:name=".MainActivity2"
+            android:name="com.LingTH.fridge.MainActivity2"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -35,15 +35,15 @@
         </activity>
 
         <!-- Other Activities -->
-        <activity android:name=".barcode.Scanner" />
+        <activity android:name="com.LingTH.fridge.barcode.Scanner" />
 
-        <activity android:name=".barcode.Add" />
-        <activity android:name=".barcode.Edit" />
+        <activity android:name="com.LingTH.fridge.barcode.Add" />
+        <activity android:name="com.LingTH.fridge.barcode.Edit" />
 
         <receiver
             android:enabled="true"
             android:exported="false"
-            android:name=".Notification.BootReceiver"
+            android:name="com.LingTH.fridge.Notification.BootReceiver"
             >
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />

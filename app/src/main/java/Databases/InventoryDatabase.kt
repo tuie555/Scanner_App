@@ -7,9 +7,9 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import com.example.myapplication.migration.MIGRATION_1_2
-import com.example.myapplication.migration.MIGRATION_2_3
-import com.example.myapplication.migration.MIGRATION_2_3_TO_3
+import com.LingTH.fridge.migration.MIGRATION_1_2
+import com.LingTH.fridge.migration.MIGRATION_2_3
+import com.LingTH.fridge.migration.MIGRATION_2_3_TO_3
 
 @Database(entities = [ProductData::class, InspectionData::class, Settings::class], version = 3)
 abstract class InventoryDatabase : RoomDatabase() {

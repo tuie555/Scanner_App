@@ -8,14 +8,14 @@ plugins {
 }
 
 android {
-    namespace = "com.example.myapplication"
+    namespace = "com.LingTH.fridge"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.myapplication"
+        applicationId = "com.LingTH.fridge"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
+        versionCode = 2
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -31,6 +31,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            isShrinkResources = true
         }
     }
 
