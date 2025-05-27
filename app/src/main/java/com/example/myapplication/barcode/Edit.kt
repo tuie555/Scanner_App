@@ -374,7 +374,7 @@ fun BackButtonEdit(onBackClick: () -> Unit) {
             )
 
             Spacer(modifier = Modifier.width(4.dp))
-            Text(text = "Back", fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+
         }
     }
 }
