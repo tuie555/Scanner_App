@@ -3,10 +3,10 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.compose.compiler)
-    id("com.google.devtools.ksp") version "2.1.20-2.0.1"
     alias(libs.plugins.google.gms.google.services)
-
+    id("com.google.devtools.ksp") version "2.1.20-2.0.1"
 }
+
 
 android {
     namespace = "com.example.myapplication"
@@ -64,10 +64,7 @@ android {
     }
 
 }
-
 dependencies {
-
-
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
     implementation(libs.androidx.activity)
@@ -77,70 +74,73 @@ dependencies {
     implementation(libs.androidx.credentials.play.services.auth)
     implementation(libs.googleid)
     implementation(libs.core.ktx)
-    val camerax_version = "1.5.0-beta01"
-    val ktor_version = "3.1.3"
 
+    // CameraX
+    val camerax_version = "1.5.0-beta01"
+    implementation("androidx.camera:camera-mlkit-vision:$camerax_version")
+    implementation("androidx.camera:camera-core:$camerax_version")
+    implementation("androidx.camera:camera-camera2:$camerax_version")
+    implementation("androidx.camera:camera-lifecycle:$camerax_version")
+    implementation("androidx.camera:camera-view:$camerax_version")
+    implementation("androidx.camera:camera-extensions:$camerax_version")
+
+    // Jetpack Compose
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
-    implementation(platform(libs.androidx.compose.bom)) // ใช้ BOM สำหรับ Compose
+    implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
-    implementation("io.ktor:ktor-client-okhttp:3.1.3")
-    implementation("com.google.mlkit:barcode-scanning:17.3.0")
-    implementation("androidx.camera:camera-mlkit-vision:${camerax_version}")
-    implementation("androidx.camera:camera-core:${camerax_version}")
-    implementation("androidx.camera:camera-camera2:${camerax_version}")
-    implementation("androidx.camera:camera-lifecycle:${camerax_version}")
-    implementation("androidx.camera:camera-view:${camerax_version}")
-    implementation("androidx.camera:camera-extensions:${camerax_version}")
-    implementation("androidx.navigation:navigation-compose:2.9.0")
-    implementation("io.ktor:ktor-client-core:$ktor_version")
-    implementation("io.ktor:ktor-client-android:$ktor_version")
-    implementation("io.ktor:ktor-client-logging:$ktor_version")
-    implementation("org.slf4j:slf4j-api:2.0.17")
-    implementation("io.ktor:ktor-client-content-negotiation:$ktor_version")
-    implementation("io.ktor:ktor-serialization-kotlinx-json:$ktor_version")
-    implementation("io.ktor:ktor-client-cio:3.1.3")
-    implementation("io.ktor:ktor-client-plugins:3.1.1")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1")
-    implementation("androidx.room:room-runtime:2.7.1")
-    implementation("androidx.room:room-ktx:2.7.1")
-    ksp("androidx.room:room-compiler:2.7.1")
-    implementation ("androidx.work:work-runtime-ktx:2.10.1")
-    implementation("io.ktor:ktor-client-core:3.1.3")
-    implementation("io.ktor:ktor-client-cio:3.1.3")
-    implementation(libs.kotlinx.coroutines.core) // หรือใหม่กว่านี้
-
-// สำหรับ JSON และ ContentNegotiation
-    implementation("io.ktor:ktor-client-content-negotiation:3.1.3")
-    implementation("io.ktor:ktor-serialization-kotlinx-json:3.1.3")
-
-// Kotlinx serialization
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1")// สำหรับ Ktor client
-    implementation("io.ktor:ktor-client-core:3.1.3")
-    implementation("io.ktor:ktor-client-cio:3.1.3")
-
-// สำหรับ JSON และ ContentNegotiation
-    implementation("io.ktor:ktor-client-content-negotiation:3.1.3")
-    implementation("io.ktor:ktor-serialization-kotlinx-json:3.1.3")
-    implementation ("androidx.compose.material3:material3:1.3.2")
-// Kotlinx serialization
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1")
-
-
-    // Jetpack Compose Dependencies
+    implementation("androidx.compose.material3:material3:1.3.2")
     implementation("androidx.compose.ui:ui:1.8.2")
     implementation("androidx.compose.material:material:1.8.2")
     implementation("androidx.compose.material:material-icons-extended:1.7.8")
-    implementation("androidx.compose.material3:material3:1.3.2")
     implementation("androidx.compose.ui:ui-tooling-preview:1.8.2")
     implementation("androidx.compose.foundation:foundation:1.8.2")
     implementation("androidx.activity:activity-compose:1.10.1")
+
+    // Coil (image loading)
     implementation("io.coil-kt:coil-compose:2.7.0")
-    implementation ("androidx.core:core-ktx:1.16.0")
+
+    // Navigation
+    implementation("androidx.navigation:navigation-compose:2.9.0")
+
+    // Room
+    implementation("androidx.room:room-runtime:2.7.1")
+    implementation("androidx.room:room-ktx:2.7.1")
+    ksp("androidx.room:room-compiler:2.7.1")
+
+    // WorkManager
+    implementation("androidx.work:work-runtime-ktx:2.10.1")
+
+    // ML Kit
+    implementation("com.google.mlkit:barcode-scanning:17.3.0")
+
+    // Ktor (networking)
+    val ktor_version = "3.1.3"
+    implementation("io.ktor:ktor-client-core:$ktor_version")
+    implementation("io.ktor:ktor-client-android:$ktor_version")
+    implementation("io.ktor:ktor-client-okhttp:$ktor_version")
+    implementation("io.ktor:ktor-client-cio:$ktor_version")
+    implementation("io.ktor:ktor-client-logging:$ktor_version")
+    implementation("io.ktor:ktor-client-content-negotiation:$ktor_version")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:$ktor_version")
+    implementation("io.ktor:ktor-client-plugins:3.1.1")
+    implementation("org.slf4j:slf4j-api:2.0.17")
+
+    // Kotlinx Serialization
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1")
+
+    // Coroutines
+    implementation(libs.kotlinx.coroutines.core)
+
+    // Play Integrity (ใหม่)
+    implementation("com.google.android.play:integrity:1.3.0")
+    implementation("com.google.android.gms:play-services-tasks:18.0.2")
+
+    // Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -148,10 +148,4 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
-
-    // Play Integrity API
-    implementation ("com.google.android.play:integrity:1.3.0")
-
-    // Play Core common tasks
-    implementation("com.google.android.gms:play-services-tasks:18.0.2")
 }
