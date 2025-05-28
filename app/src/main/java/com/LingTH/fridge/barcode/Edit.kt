@@ -284,6 +284,7 @@ fun updateProductIfValidEdit(
 
 
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CenterAlignedTopAppBarExampleEdit(
     id: Int, // ✅ เพิ่มตรงนี้
@@ -647,31 +648,29 @@ fun getTodayDateEdit(): String {
     val formatter = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
     return formatter.format(Date())
 }
-
 @Composable
 fun SettingsScreenaddEdit(
     categories: String,
     onValueChange: (String) -> Unit
 ) {
-    var visibleSelector by remember { mutableStateOf(VisibleSelectorEdit.NONE) }
+    var visibleSelector by remember { mutableStateOf(VisibleSelector.NONE) }
 
-    val parsedCategories = remember(categories) {
-        categories
-            .split(",")
-            .map { it.trim() }
-            .filter { it.startsWith("en:") }
-            .map { it.removePrefix("en:") }
-            .distinct()
+    val selectAlertbeforeEX = remember { mutableStateListOf<String>() }
+
+    // Load existing categories once when Composable loads
+    LaunchedEffect(Unit) {
+        if (selectAlertbeforeEX.isEmpty() && categories.isNotBlank()) {
+            val initial = categories
+                .split(",")
+                .map { it.trim().removePrefix("en:") }
+                .filter { it.isNotBlank() }
+            selectAlertbeforeEX.addAll(initial)
+        }
     }
 
-    // Use mutableStateListOf to preserve state reactivity
-    val selectAlertbeforeEX = remember(categories) {
-        mutableStateListOf<String>().apply { addAll(parsedCategories) }
-    }
-
-    val alertOptions = remember(categories) {
+    val alertOptions = remember {
         mutableStateListOf<String>().apply {
-            addAll(parsedCategories)
+            addAll(selectAlertbeforeEX)
             add("+")
         }
     }
@@ -679,19 +678,19 @@ fun SettingsScreenaddEdit(
     var isAddingCustomOption by remember { mutableStateOf(false) }
     var customOptionText by remember { mutableStateOf("") }
 
-    val selectedText = selectAlertbeforeEX.filter { it.isNotBlank() }.joinToString(", ")
+    val selectedText = selectAlertbeforeEX.joinToString(", ")
 
-    inputNotFileEdit(
+    inputNotFile(
         label = "Category:",
         value = selectedText
     ) {
-        visibleSelector = if (visibleSelector == VisibleSelectorEdit.ALERT_BEFORE_EXPIRED)
-            VisibleSelectorEdit.NONE
+        visibleSelector = if (visibleSelector == VisibleSelector.ALERT_BEFORE_EXPIRED)
+            VisibleSelector.NONE
         else
-            VisibleSelectorEdit.ALERT_BEFORE_EXPIRED
+            VisibleSelector.ALERT_BEFORE_EXPIRED
     }
 
-    AnimatedVisibility(visible = visibleSelector == VisibleSelectorEdit.ALERT_BEFORE_EXPIRED) {
+    AnimatedVisibility(visible = visibleSelector == VisibleSelector.ALERT_BEFORE_EXPIRED) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -766,6 +765,7 @@ fun SettingsScreenaddEdit(
         }
     }
 }
+
 @Composable
 fun DeleteProductButton(
     productId: Int,

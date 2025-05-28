@@ -106,9 +106,12 @@ import com.LingTH.fridge.sortandfilter.FilterViewModelFactory
 import java.util.concurrent.TimeUnit
 import androidx.appcompat.app.AlertDialog
 import android.provider.Settings
+import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.ui.res.painterResource
 
 
 class MainActivity2 : ComponentActivity() {
@@ -117,7 +120,7 @@ class MainActivity2 : ComponentActivity() {
     ) { isGranted: Boolean ->
         if (isGranted) {
             Log.d("Permission", "✅ Notification permission granted")
-            testNotification()
+
         } else {
             Log.w("Permission", "❌ Notification permission denied")
         }
@@ -127,16 +130,46 @@ class MainActivity2 : ComponentActivity() {
             ContextCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS)
             != PackageManager.PERMISSION_GRANTED
         ) {
-            // เรียก launcher เพื่อขอ permission อย่างถูกต้อง
-            requestPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
-        } else {
-            // ได้รับ permission แล้ว — เรียกใช้ testNotification ได้เลย
-            testNotification()
+            // บังคับไปหน้า Settings ทันที
+            AlertDialog.Builder(this)
+                .setTitle("Notification Permission Required")
+                .setMessage("This app needs notification permission to function properly.")
+                .setCancelable(false)
+                .setPositiveButton("Go to Settings") { _, _ ->
+                    val intent = Intent().apply {
+                        action = Settings.ACTION_APPLICATION_DETAILS_SETTINGS
+                        data = Uri.fromParts("package", packageName, null)
+                    }
+                    startActivity(intent)
+                    finish() // ปิด activity เพื่อบังคับให้ user กด permission ก่อน
+                }
+                .setNegativeButton("Exit") { _, _ ->
+                    finish()
+                }
+                .show()
+
+            return // หยุดต่อ ถ้ายังไม่มี permission
         }
     }
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Check notification permission for Android 13+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED
+            ) {
+                // บังคับเข้า settings โดยตรง
+                val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                    data = Uri.fromParts("package", packageName, null)
+                }
+                startActivity(intent)
+
+                Toast.makeText(this, "Please allow notifications to continue.", Toast.LENGTH_LONG).show()
+                finish() // ออกจาก activity เพื่อบังคับ user ต้องกลับมาหลังอนุญาต
+                return
+            }
+        }
         val db = InventoryDatabase.getDatabase(this)
         val settingsDao = db.settingsDao()
 
@@ -149,7 +182,7 @@ class MainActivity2 : ComponentActivity() {
             }
         }
 
-        requestNotificationPermission()
+
 
         if (!NotificationManagerCompat.from(this).areNotificationsEnabled()) {
             AlertDialog.Builder(this)
@@ -169,6 +202,7 @@ class MainActivity2 : ComponentActivity() {
 
 
         setContent {
+
             val navController = rememberNavController()
             var isSettingsScreen by remember { mutableStateOf(false) }
             var searchText by remember { mutableStateOf("") }
@@ -198,18 +232,15 @@ class MainActivity2 : ComponentActivity() {
                     notificationManager.createNotificationChannel(channel)
                 }
 
-                val notification = NotificationCompat.Builder(context, channelId)
-                    .setSmallIcon(R.drawable.notification_icon)
-                    .setContentTitle("Test Notification")
-                    .setContentText("This is a test notification.")
-                    .build()
 
-                notificationManager.notify(1, notification)
             }
 
             Scaffold(
                 topBar = {
+
+
                     if (!isSettingsScreen) {
+
                         TopBar(
                             searchText = searchText,
                             onSearchTextChange = { searchText = it },
@@ -239,13 +270,6 @@ class MainActivity2 : ComponentActivity() {
     }
 }
     // Optional: ตรวจผลการขอ permission
-
-
-    // สมมุติว่าเป็นฟังก์ชันแสดง Notification
-    private fun testNotification() {
-        // แสดง notification หรือ logic อื่น ๆ
-        Log.d("Notification", "🔔 Showing test notification")
-    }
 
 
 
@@ -291,7 +315,6 @@ fun ProductListScreen(
 
 
 
-@SuppressLint("ConfigurationScreenWidthHeight")
 @Composable
 fun TopBar(
     searchText: String,
@@ -309,61 +332,72 @@ fun TopBar(
         elevation = 0.dp,
         modifier = Modifier
             .padding(top = insets.calculateTopPadding())
-            .fillMaxWidth(),
-        navigationIcon = {
-            Spacer(modifier = Modifier.width(0.dp))
-        },
+            .fillMaxWidth()
+            .height(64.dp),
         title = {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(0.dp)
-            ) {
-                if (!isFilterScreen) {
-                    TextField(
-                        value = searchText,
-                        onValueChange = onSearchTextChange,
-                        singleLine = true,
-                        textStyle = LocalTextStyle.current.copy(
-                            fontSize = if (screenWidthDp < 360) 12.sp else 14.sp
-                        ),
-                        placeholder = {
-                            Text(
-                                "Search",
-                                color = Color.Gray,
-                                fontSize = if (screenWidthDp < 360) 12.sp else 14.sp
-                            )
-                        },
-                        shape = RoundedCornerShape(30.dp),
+            if (!isFilterScreen) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.iconapp),
+                        contentDescription = "Logo Icon",
+                        modifier = Modifier
+                            .size(60.dp)
+                            .padding(end = 8.dp)
+                    )
+                    Box(
                         modifier = Modifier
                             .weight(1f)
-                            .heightIn(min = 40.dp, max = 48.dp)
-                            .offset(x = (-45).dp),
-                        colors = TextFieldDefaults.textFieldColors(
-                            textColor = Color.Black,
-                            cursorColor = Color.Black,
-                            focusedIndicatorColor = Color.Transparent,
-                            unfocusedIndicatorColor = Color.Transparent,
-                            placeholderColor = Color.Gray,
-                            backgroundColor = Color(0xFFF0F0F0)
-                        ),
-                        leadingIcon = {
+                            .height(48.dp)
+                            .background(
+                                color = Color(0xFFF0F0F0),
+                                shape = RoundedCornerShape(24.dp)
+                            )
+                            .padding(horizontal = 16.dp, vertical = 0.dp),
+                        contentAlignment = Alignment.CenterStart
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
                             Icon(
                                 imageVector = Icons.Default.Search,
-                                contentDescription = "Search Icon",
-                                tint = Color.Gray
+                                contentDescription = null,
+                                tint = Color.Gray,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            BasicTextField(
+                                value = searchText,
+                                onValueChange = onSearchTextChange,
+                                singleLine = true,
+                                textStyle = LocalTextStyle.current.copy(
+                                    color = Color.Black,
+                                    fontSize = 14.sp
+                                ),
+                                decorationBox = { innerTextField ->
+                                    if (searchText.isEmpty()) {
+                                        Text(
+                                            "Search",
+                                            color = Color.Gray,
+                                            fontSize = 14.sp
+                                        )
+                                    }
+                                    innerTextField()
+                                },
+                                modifier = Modifier.fillMaxWidth()
                             )
                         }
-                    )
-                } else {
-                    Text(
-                        text = "Sorting and Filtering",
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = if (screenWidthDp < 360) 20.sp else 24.sp,
-                        color = Color.Black,
-                    )
+                    }
                 }
+            } else {
+                Text(
+                    text = "Sorting and Filtering",
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 22.sp,
+                    color = Color.Black
+                )
             }
         },
         actions = {
@@ -385,6 +419,7 @@ fun TopBar(
         }
     )
 }
+
 
 
 

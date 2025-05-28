@@ -77,6 +77,9 @@ import coil.compose.rememberAsyncImagePainter
 import Databases.Addviewmodel
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.material3.IconButton
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.unit.Dp
 import com.LingTH.fridge.MainActivity2
 import com.LingTH.fridge.setting.components.OptionSelector
 import com.LingTH.fridge.ui.theme.getAdaptiveHorizontalPadding
@@ -169,7 +172,6 @@ fun ProductScreen(barcode: String, viewModel: Addviewmodel) {
         categories = categories,
         imageUrl = imageUrl,
         newImageUri = newImageUri,
-        addDay = addDay,
         expirationDate = expirationDate,
         notes = notes,
         viewModel = viewModel,
@@ -222,7 +224,10 @@ fun ProductScreen(barcode: String, viewModel: Addviewmodel) {
             )
 
             Spacer(modifier = Modifier.height(16.dp))
+            Log.d("imon" , "have $addDay $")
+
         }
+
     }
 }
 
@@ -244,61 +249,67 @@ fun String.toEpochMillis(): Long {
     }
 }
 
-
+var isSaved = true
 fun saveProductIfValid(
     viewModel: Addviewmodel,
     barcode: String,
     name: String,
     categories: String,
     imageUrl: String,
-    addDay: String?,
     expirationDate: String?,
     notes: String,
     context: Context,
     onComplete: () -> Unit
 ) {
-    if (addDay.isNullOrEmpty() || expirationDate.isNullOrEmpty()) {
-        Toast.makeText(context, "Please select Add Day and Expiration Date", Toast.LENGTH_SHORT).show()
-        return
-    }
-
-    val addDayMillis = addDay.toEpochMillis()
-    val expirationMillis = expirationDate.toEpochMillis()
-
-    if (addDayMillis == 0L || expirationMillis == 0L) {
-        Toast.makeText(context, "Invalid date format", Toast.LENGTH_SHORT).show()
-        return
-    }
-
-    // *** ตรวจสอบและขอสิทธิ์ถาวร ถ้า imageUrl เป็น content:// ***
-    if (imageUrl.startsWith("content://")) {
-        try {
-            val uri = Uri.parse(imageUrl)
-            context.contentResolver.takePersistableUriPermission(
-                uri,
-                Intent.FLAG_GRANT_READ_URI_PERMISSION
-            )
-        } catch (e: Exception) {
-            e.printStackTrace()
-            Toast.makeText(context, "Failed to persist image permission", Toast.LENGTH_SHORT).show()
+    if (isSaved) {
+        val todayDate = getTodayDate()
+        val addDayMillis = todayDate.toEpochMillis()
+        Log.d("imon", "$todayDate")
+        if (expirationDate.isNullOrEmpty()) {
+            Toast.makeText(context, "Please select Expiration Date", Toast.LENGTH_SHORT).show()
             return
         }
-    }
 
-    viewModel.saveProduct(
-        barcode = barcode,
-        name = name,
-        categories = categories,
-        imageUrl = imageUrl,
-        add_day = addDayMillis,
-        expie_day = expirationMillis,
-        notes = notes,
-        onSaved = {
-            Toast.makeText(context, "Product saved successfully", Toast.LENGTH_SHORT).show()
-            onComplete()
+        val expirationMillis = expirationDate.toEpochMillis()
+
+        if (addDayMillis == 0L || expirationMillis == 0L) {
+            Toast.makeText(context, "Invalid date format", Toast.LENGTH_SHORT).show()
+            return
         }
-    )
+
+        if (imageUrl.startsWith("content://")) {
+            try {
+                val uri = Uri.parse(imageUrl)
+                context.contentResolver.takePersistableUriPermission(
+                    uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+            } catch (e: Exception) {
+                e.printStackTrace()
+                Toast.makeText(context, "Failed to persist image permission", Toast.LENGTH_SHORT)
+                    .show()
+                return
+            }
+        }
+
+        viewModel.saveProduct(
+            barcode = barcode,
+            name = name,
+            categories = categories,
+            imageUrl = imageUrl,
+            add_day = addDayMillis,
+            expie_day = expirationMillis,
+            notes = notes,
+            onSaved = {
+                Toast.makeText(context, "Product saved successfully", Toast.LENGTH_SHORT).show()
+                onComplete()
+            }
+        )
+    }
+    isSaved = false
 }
+
+
 
 
 
@@ -309,7 +320,6 @@ fun CenterAlignedTopAppBarExample(
     categories: String,
     imageUrl: String,
     newImageUri: Uri?,       // ✅ รับ newImageUri ด้วย
-    addDay: String?,
     expirationDate: String?,
     notes: String,
     viewModel: Addviewmodel,
@@ -358,7 +368,6 @@ fun CenterAlignedTopAppBarExample(
                                     name = name,
                                     categories = categories,
                                     imageUrl = finalImageUrl,
-                                    addDay = addDay,
                                     expirationDate = expirationDate,
                                     notes = notes,
                                     context = context,
@@ -545,10 +554,16 @@ fun ExpirationDateSelector(
                         showDatePickerDialog = false
                         // Update the date when "OK" is clicked
                         datePickerState.selectedDateMillis?.let { millis ->
-                            onDateChange(convertMillisToDate(millis))
+                            val date = convertMillisToDate(millis)
+                            Log.d("imon", "Selected date in millis: $millis")
+                            Log.d("imon", "Converted date: $date")
+                            onDateChange(date)
                         }
-                    }) { Text("OK") }
-                },
+                    }) {
+                        Text("OK")
+                    }
+                }
+                ,
                 dismissButton = {
                     TextButton(onClick = { showDatePickerDialog = false }) { Text("Cancel") }
                 }
@@ -582,17 +597,16 @@ fun DayAdd(
     selectedDay: String? = null,
     onDayChange: (String) -> Unit
 ) {
-    val today = getTodayDate() // เช่น "2025-05-23"
+    val today = getTodayDate()
 
     var day by remember { mutableStateOf(selectedDay ?: today) }
 
-    // ส่งค่าวันที่ทันทีเมื่อเปิด Composable (ถ้ายังไม่ได้ส่ง)
+    // Trigger onDayChange only once if the initial date is not set
     LaunchedEffect(Unit) {
         if (selectedDay == null) {
             onDayChange(today)
         }
     }
-
     Column(modifier = Modifier.padding(1.dp)) {
         inputNotFile(
             label = "Add Day",
@@ -679,23 +693,22 @@ fun SettingsScreenadd(
 ) {
     var visibleSelector by remember { mutableStateOf(VisibleSelector.NONE) }
 
-    val parsedCategories = remember(categories) {
-        categories
-            .split(",")
-            .map { it.trim() }
-            .filter { it.startsWith("en:") }
-            .map { it.removePrefix("en:") }
-            .distinct()
+    val selectAlertbeforeEX = remember { mutableStateListOf<String>() }
+
+    // Load existing categories once when Composable loads
+    LaunchedEffect(Unit) {
+        if (selectAlertbeforeEX.isEmpty() && categories.isNotBlank()) {
+            val initial = categories
+                .split(",")
+                .map { it.trim().removePrefix("en:") }
+                .filter { it.isNotBlank() }
+            selectAlertbeforeEX.addAll(initial)
+        }
     }
 
-    // Use mutableStateListOf to preserve state reactivity
-    val selectAlertbeforeEX = remember(categories) {
-        mutableStateListOf<String>().apply { addAll(parsedCategories) }
-    }
-
-    val alertOptions = remember(categories) {
+    val alertOptions = remember {
         mutableStateListOf<String>().apply {
-            addAll(parsedCategories)
+            addAll(selectAlertbeforeEX)
             add("+")
         }
     }
@@ -703,7 +716,7 @@ fun SettingsScreenadd(
     var isAddingCustomOption by remember { mutableStateOf(false) }
     var customOptionText by remember { mutableStateOf("") }
 
-    val selectedText = selectAlertbeforeEX.filter { it.isNotBlank() }.joinToString(", ")
+    val selectedText = selectAlertbeforeEX.joinToString(", ")
 
     inputNotFile(
         label = "Category:",
@@ -743,7 +756,7 @@ fun SettingsScreenadd(
                                 selectAlertbeforeEX.add(option)
                             }
 
-                            val updatedCategories = selectAlertbeforeEX.joinToString(", ") { it }
+                            val updatedCategories = selectAlertbeforeEX.joinToString(", ") { "en:$it" }
                             onValueChange(updatedCategories)
                         }
                     }
@@ -793,8 +806,21 @@ fun SettingsScreenadd(
 
 
 
+
+
+
 enum class VisibleSelector {
     NONE,
     ALERT_BEFORE_EXPIRED
 
 }
+@Composable
+fun getAdaptiveHorizontalPadding(): Dp {
+    val configuration = LocalConfiguration.current
+    return when {
+        configuration.screenWidthDp < 360 -> 8.dp
+        configuration.screenWidthDp < 600 -> 16.dp
+        else -> 32.dp
+    }
+}
+
