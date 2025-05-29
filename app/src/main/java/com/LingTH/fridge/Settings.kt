@@ -11,3 +11,12 @@ data class Settings(
     val repeatAlert: String,
     val email: String
 )
+fun defaultSettings(): Settings {
+    return Settings(
+        id = 0,
+        alertBeforeExpiry = "3 days",
+        alertMode = "Normal",
+        repeatAlert = "3",
+        email = ""
+    )
+}
