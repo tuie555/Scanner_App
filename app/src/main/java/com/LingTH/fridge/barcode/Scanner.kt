@@ -6,7 +6,9 @@ import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.util.Size
+import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.ActivityResultLauncher
@@ -23,16 +25,47 @@ import androidx.camera.core.resolutionselector.ResolutionSelector
 import androidx.camera.core.resolutionselector.ResolutionStrategy
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.Icon
+import androidx.compose.material.IconButton
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Cameraswitch
+import androidx.compose.material.icons.filled.FlashlightOff
+import androidx.compose.material.icons.filled.FlashlightOn
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import com.LingTH.fridge.ui.theme.MyApplicationTheme
-
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Paint
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import com.google.mlkit.vision.barcode.BarcodeScannerOptions
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
@@ -43,55 +76,160 @@ import kotlinx.coroutines.launch
 
 
 class Scanner : ComponentActivity() {
-    private lateinit var cameraPermissionLauncher: ActivityResultLauncher<String>
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        cameraPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
-            if (isGranted) {
-                // Start the camera if permission is granted
-                setContent {
-                    MyApplicationTheme {
-                        Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                            CameraPreview(modifier = Modifier.padding(innerPadding))
-                        }
-                    }
-                }
-            } else {
+
+        setContent {
+            MyApplicationTheme {
+                ScannerScreen()
+            }
+        }
+    }
+}
+@Composable
+fun ScannerScreen() {
+    val context = LocalContext.current
+    var hasPermission by remember { mutableStateOf(false) }
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+        onResult = { granted ->
+            hasPermission = granted
+            if (!granted) {
                 Log.e("CameraPermission", "Camera permission denied")
             }
         }
+    )
 
-        // Request camera permission
+    LaunchedEffect(Unit) {
         cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
     }
-}
 
+    if (hasPermission) {
+        Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+            CameraPreview(modifier = Modifier.padding(innerPadding))
+
+        }
+    } else {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Text("Camera permission is required to scan barcodes")
+        }
+    }
+}
 @Composable
-fun CameraPreview( modifier: Modifier = Modifier) {
-    // Use AndroidView to create a PreviewView
-    AndroidView(
-        factory = { context ->
-            PreviewView(context).apply {
-                // You can set up any additional properties for the PreviewView here
-                scaleType = PreviewView.ScaleType.FILL_CENTER
+fun CameraPreview(
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    var cameraControl by remember { mutableStateOf<CameraControl?>(null) }
+
+    Box(modifier = modifier.fillMaxSize()) {
+        AndroidView(
+            factory = { ctx ->
+                PreviewView(ctx).apply {
+                    scaleType = PreviewView.ScaleType.FILL_CENTER
+                }
+            },
+            modifier = Modifier.fillMaxSize(),
+            update = { previewView ->
+                startCamera(previewView, context) { control ->
+                    cameraControl = control
+                }
             }
-        },
-        modifier = modifier.fillMaxSize()
-    ) { previewView ->
-        startCamera(previewView, previewView.context)
+        )
+        // ส่ง cameraControl ไปให้ UI Overlay
+        CameraOverlayUI(cameraControl)
     }
 }
 
-private fun startCamera(previewView: PreviewView, context: Context) {
+
+@Composable
+fun CameraOverlayUI(cameraControl: CameraControl?) {
+    var flashEnabled by remember { mutableStateOf(false) }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.6f)) // พื้นหลังมืด
+    ) {
+        // กล่องโปร่งกลางจอ (ไม่มีขอบ)
+        Box(
+            modifier = Modifier
+                .align(Alignment.Center)
+                .size(width = 200.dp, height = 200.dp)
+                .drawWithContent {
+                    val cornerRadius = 16.dp.toPx()
+                    drawIntoCanvas { canvas ->
+                        val paint = Paint().apply {
+                            color = Color.Transparent
+                            blendMode = BlendMode.Clear
+                        }
+                        canvas.drawRoundRect(
+                            left = 0f,
+                            top = 0f,
+                            right = size.width,
+                            bottom = size.height,
+                            radiusX = cornerRadius,
+                            radiusY = cornerRadius,
+                            paint = paint
+                        )
+                    }
+                    drawContent()
+                }
+        )
+
+        // ข้อความอยู่ใต้กรอบ
+        Text(
+            text = "สแกนบาร์โค้ด",
+            color = Color.White,
+            fontSize = 36.sp,
+            modifier = Modifier
+                .align(Alignment.Center)
+                .offset(y = 140.dp)
+                .padding(8.dp)
+        )
+
+        // ปุ่มแฟลช
+        Row(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .padding(24.dp),
+            horizontalArrangement = Arrangement.Center
+        ) {
+            IconButton(onClick = {
+                cameraControl?.let {
+                    flashEnabled = !flashEnabled
+                    it.enableTorch(flashEnabled)
+                }
+            }) {
+                Icon(
+                    imageVector = if (flashEnabled) Icons.Default.FlashlightOn else Icons.Default.FlashlightOff,
+                    contentDescription = "Toggle Flash",
+                    tint = Color.White,
+                    modifier = Modifier.size(32.dp)
+                )
+            }
+        }
+    }
+}
+
+
+
+private fun startCamera(
+    previewView: PreviewView,
+    context: Context,
+    onCameraControlReady: (CameraControl) -> Unit
+) {
     val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
 
     cameraProviderFuture.addListener({
         val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
 
-        val preview = Preview.Builder()
-
-            .build()
+        val preview = Preview.Builder().build()
         val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
 
         preview.surfaceProvider = previewView.surfaceProvider
@@ -100,25 +238,29 @@ private fun startCamera(previewView: PreviewView, context: Context) {
             setAspectRatioStrategy(AspectRatioStrategy.RATIO_16_9_FALLBACK_AUTO_STRATEGY)
             setResolutionStrategy(
                 ResolutionStrategy(
-                    Size(1280, 720), // Desired resolution
+                    Size(1280, 720),
                     ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER_THEN_LOWER
                 )
             )
         }
+
         val imageAnalysis = ImageAnalysis.Builder()
             .setResolutionSelector(resolutionSelectorBuilder.build())
             .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
             .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_YUV_420_888)
             .setOutputImageRotationEnabled(true)
             .build()
-        Log.d("CameraSetup", "Setting up image analysis")
+
         val camera = cameraProvider.bindToLifecycle(context as LifecycleOwner, cameraSelector, preview, imageAnalysis)
         val cameraControl = camera.cameraControl
-        imageAnalysis.setAnalyzer(ContextCompat.getMainExecutor(context),   ImageAnalyzer(context, cameraControl))
 
-        Log.d("CameraSetup", "Camera successfully bound to lifecycle")
+        imageAnalysis.setAnalyzer(ContextCompat.getMainExecutor(context), ImageAnalyzer(context, cameraControl))
+
+        onCameraControlReady(cameraControl)
+
     }, ContextCompat.getMainExecutor(context))
 }
+
 
 
 

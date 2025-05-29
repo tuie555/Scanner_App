@@ -1,6 +1,9 @@
 package com.LingTH.fridge.sortandfilter
 
 import Databases.ProductDao
+import android.app.Activity
+import android.content.Intent
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -17,10 +20,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
+import com.LingTH.fridge.MainActivity2
 import com.LingTH.fridge.setting.components.OptionSelector
 import com.LingTH.fridge.setting.components.SettingsItem
 import com.LingTH.fridge.setting.components.SingleOptionSelector
@@ -44,8 +49,9 @@ fun SandFscreen(
     dao: ProductDao,
     filterViewModel: FilterViewModel
 ) {
-    var visibleSelector by remember { mutableStateOf(VisibleSelector.NONE) }
 
+    val context = LocalContext.current
+    var visibleSelector by remember { mutableStateOf(VisibleSelector.NONE) }
     val selectedCategory by filterViewModel.selectedCategory.collectAsState()
     val selectedExpiredIn by filterViewModel.selectedExpiredIn.collectAsState()
     val selectedAdded by filterViewModel.selectedAdded.collectAsState()
@@ -126,6 +132,17 @@ fun SandFscreen(
 
     val scrollState = rememberScrollState()
 
+    BackHandler {
+        val intent = Intent(context, MainActivity2::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        context.startActivity(intent)
+
+        // Optional: ปิด Compose Activity ถ้าคุณไม่อยากให้กด back แล้วกลับมาอีก
+        if (context is Activity) {
+            context.finish()
+        }
+    }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -245,6 +262,7 @@ fun SandFscreen(
                 }
             )
         }
+        Spacer(modifier = Modifier.height(64.dp))
 
 
     }

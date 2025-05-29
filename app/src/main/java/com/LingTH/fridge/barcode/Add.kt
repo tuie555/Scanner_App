@@ -262,9 +262,15 @@ fun saveProductIfValid(
     onComplete: () -> Unit
 ) {
     if (isSaved) {
+        if (categories.isBlank()) {
+            Toast.makeText(context, "Please select a category", Toast.LENGTH_SHORT).show()
+            return
+        }
+
         val todayDate = getTodayDate()
         val addDayMillis = todayDate.toEpochMillis()
         Log.d("imon", "$todayDate")
+
         if (expirationDate.isNullOrEmpty()) {
             Toast.makeText(context, "Please select Expiration Date", Toast.LENGTH_SHORT).show()
             return
@@ -286,8 +292,7 @@ fun saveProductIfValid(
                 )
             } catch (e: Exception) {
                 e.printStackTrace()
-                Toast.makeText(context, "Failed to persist image permission", Toast.LENGTH_SHORT)
-                    .show()
+                Toast.makeText(context, "Failed to persist image permission", Toast.LENGTH_SHORT).show()
                 return
             }
         }
@@ -313,24 +318,25 @@ fun saveProductIfValid(
 
 
 
+
 @Composable
 fun CenterAlignedTopAppBarExample(
     barcode: String,
     name: String,
     categories: String,
     imageUrl: String,
-    newImageUri: Uri?,       // ✅ รับ newImageUri ด้วย
+    newImageUri: Uri?,
     expirationDate: String?,
     notes: String,
     viewModel: Addviewmodel,
     context: Context,
     onBackClick: () -> Unit,
-    content: @Composable (PaddingValues) -> Unit // Added content lambda
+    content: @Composable (PaddingValues) -> Unit
 ) {
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
     val context1 = LocalContext.current
     val activity = context1 as? Activity
-    val coroutineScope = rememberCoroutineScope()
+
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -349,42 +355,44 @@ fun CenterAlignedTopAppBarExample(
                         text = "Done",
                         fontSize = 18.sp,
                         modifier = Modifier.clickable {
-                            Log.d("DEBUG", "Done button clicked")
-                            coroutineScope.launch {
-                                val finalImageUrl = newImageUri?.toString() ?: imageUrl
-                                if (finalImageUrl.startsWith("content://")) {
-                                    try {
-                                        context.contentResolver.takePersistableUriPermission(
-                                            Uri.parse(finalImageUrl),
-                                            Intent.FLAG_GRANT_READ_URI_PERMISSION
-                                        )
-                                    } catch (e: Exception) {
-                                        e.printStackTrace()
-                                    }
+                            val finalImageUrl = newImageUri?.toString() ?: imageUrl
+                            if (finalImageUrl.startsWith("content://")) {
+                                try {
+                                    context.contentResolver.takePersistableUriPermission(
+                                        Uri.parse(finalImageUrl),
+                                        Intent.FLAG_GRANT_READ_URI_PERMISSION
+                                    )
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
                                 }
-                                saveProductIfValid(
-                                    viewModel = viewModel,
-                                    barcode = barcode,
-                                    name = name,
-                                    categories = categories,
-                                    imageUrl = finalImageUrl,
-                                    expirationDate = expirationDate,
-                                    notes = notes,
-                                    context = context,
-                                    onComplete = {
-                                        Log.d("NAVIGATION", "Navigating to MainActivity2")
-                                        activity?.startActivity(Intent(activity, MainActivity2::class.java))
-                                        activity?.finish()
-                                    }
-                                )
                             }
+
+                            isSaved = true
+                            saveProductIfValid(
+                                viewModel = viewModel,
+                                barcode = barcode,
+                                name = name,
+                                categories = categories,
+                                imageUrl = finalImageUrl,
+                                expirationDate = expirationDate,
+                                notes = notes,
+                                context = context,
+                                onComplete = {
+                                    Log.d("onComplete", "called")
+                                    val intent = Intent(activity, MainActivity2::class.java).apply {
+                                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                                    }
+                                    activity?.startActivity(intent)
+                                    activity?.finish()
+                                }
+                            )
                         }
                     )
                 },
                 scrollBehavior = scrollBehavior,
             )
         },
-        content = content // Use the content lambda here
+        content = content
     )
 }
 
@@ -648,7 +656,7 @@ fun inputNotFile(label: String, value: String, onToggleVisible: () -> Unit) {
                 horizontalArrangement = Arrangement.End
             ) {
                 Text(
-                    text = value.ifEmpty { "Select Date" },
+                    text = value.ifEmpty { "Select Category" },
                     fontSize = 14.sp,
                     color = Color.DarkGray
                 )
@@ -696,15 +704,17 @@ fun SettingsScreenadd(
     val selectAlertbeforeEX = remember { mutableStateListOf<String>() }
 
     // Load existing categories once when Composable loads
-    LaunchedEffect(Unit) {
+    LaunchedEffect(categories) {
         if (selectAlertbeforeEX.isEmpty() && categories.isNotBlank()) {
             val initial = categories
                 .split(",")
                 .map { it.trim().removePrefix("en:") }
                 .filter { it.isNotBlank() }
+            selectAlertbeforeEX.clear()
             selectAlertbeforeEX.addAll(initial)
         }
     }
+
 
     val alertOptions = remember {
         mutableStateListOf<String>().apply {
@@ -756,7 +766,7 @@ fun SettingsScreenadd(
                                 selectAlertbeforeEX.add(option)
                             }
 
-                            val updatedCategories = selectAlertbeforeEX.joinToString(", ") { "en:$it" }
+                            val updatedCategories = selectAlertbeforeEX.joinToString(", ") { it }
                             onValueChange(updatedCategories)
                         }
                     }
@@ -789,7 +799,7 @@ fun SettingsScreenadd(
                                     customOptionText = ""
                                     isAddingCustomOption = false
 
-                                    val updatedCategories = selectAlertbeforeEX.joinToString(", ") { "en:$it" }
+                                    val updatedCategories = selectAlertbeforeEX.joinToString(", ") { it }
                                     onValueChange(updatedCategories)
                                 }
                             },

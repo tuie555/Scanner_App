@@ -107,102 +107,56 @@ import java.util.concurrent.TimeUnit
 import androidx.appcompat.app.AlertDialog
 import android.provider.Settings
 import android.widget.Toast
+import androidx.activity.result.ActivityResultLauncher
+import androidx.compose.foundation.layout.navigationBars
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.ui.res.painterResource
+import androidx.work.OneTimeWorkRequestBuilder
 
 
 class MainActivity2 : ComponentActivity() {
-    private val requestPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { isGranted: Boolean ->
-        if (isGranted) {
-            Log.d("Permission", "✅ Notification permission granted")
+    private lateinit var requestPermissionLauncher: ActivityResultLauncher<String>
 
-        } else {
-            Log.w("Permission", "❌ Notification permission denied")
-        }
-    }
-    private fun requestNotificationPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-            ContextCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS)
-            != PackageManager.PERMISSION_GRANTED
-        ) {
-            // บังคับไปหน้า Settings ทันที
-            AlertDialog.Builder(this)
-                .setTitle("Notification Permission Required")
-                .setMessage("This app needs notification permission to function properly.")
-                .setCancelable(false)
-                .setPositiveButton("Go to Settings") { _, _ ->
-                    val intent = Intent().apply {
-                        action = Settings.ACTION_APPLICATION_DETAILS_SETTINGS
-                        data = Uri.fromParts("package", packageName, null)
-                    }
-                    startActivity(intent)
-                    finish() // ปิด activity เพื่อบังคับให้ user กด permission ก่อน
-                }
-                .setNegativeButton("Exit") { _, _ ->
-                    finish()
-                }
-                .show()
-
-            return // หยุดต่อ ถ้ายังไม่มี permission
-        }
-    }
-    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // Check notification permission for Android 13+
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS)
-                != PackageManager.PERMISSION_GRANTED
-            ) {
-                // บังคับเข้า settings โดยตรง
-                val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                    data = Uri.fromParts("package", packageName, null)
+            requestPermissionLauncher = registerForActivityResult(
+                ActivityResultContracts.RequestPermission()
+            ) { isGranted ->
+                if (!isGranted) {
+                    Toast.makeText(this, "คุณปฏิเสธการอนุญาตแจ้งเตือน", Toast.LENGTH_SHORT).show()
                 }
-                startActivity(intent)
+            }
 
-                Toast.makeText(this, "Please allow notifications to continue.", Toast.LENGTH_LONG).show()
-                finish() // ออกจาก activity เพื่อบังคับ user ต้องกลับมาหลังอนุญาต
-                return
+            when {
+                ContextCompat.checkSelfPermission(
+                    this, android.Manifest.permission.POST_NOTIFICATIONS
+                ) == PackageManager.PERMISSION_GRANTED -> {
+                    // Ok
+                }
+
+                shouldShowRequestPermissionRationale(android.Manifest.permission.POST_NOTIFICATIONS) -> {
+                    AlertDialog.Builder(this)
+                        .setTitle("แจ้งเตือนสำคัญ")
+                        .setMessage("แอปต้องการสิทธิ์การแจ้งเตือนเพื่อให้แจ้งเตือนวันหมดอายุของสินค้า")
+                        .setPositiveButton("อนุญาต") { _, _ ->
+                            requestPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                        }
+                        .setNegativeButton("ยกเลิก", null)
+                        .show()
+                }
+
+                else -> {
+                    requestPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                }
             }
         }
-        val db = InventoryDatabase.getDatabase(this)
-        val settingsDao = db.settingsDao()
-
-        lifecycleScope.launch {
-            val settings = settingsDao.getSettings()
-
-            if (settings != null) {
-                val repeatHours = settings.repeatAlert.toIntOrNull() ?: 4
-                scheduleRepeatingWork(this@MainActivity2, repeatHours)
-            }
-        }
-
-
-
-        if (!NotificationManagerCompat.from(this).areNotificationsEnabled()) {
-            AlertDialog.Builder(this)
-                .setTitle("Notification is Disabled")
-                .setMessage("Please enable notifications in system settings to receive alerts.")
-                .setPositiveButton("Go to Settings") { _, _ ->
-                    val intent = Intent().apply {
-                        action = Settings.ACTION_APP_NOTIFICATION_SETTINGS
-                        putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
-                    }
-                    startActivity(intent)
-                }
-                .setNegativeButton("Cancel", null)
-                .show()
-        }
-
-
-
+        testWorkerNow(this) // ย้ายมาไว้ก่อน setContent
         setContent {
-
             val navController = rememberNavController()
             var isSettingsScreen by remember { mutableStateOf(false) }
             var searchText by remember { mutableStateOf("") }
@@ -217,7 +171,6 @@ class MainActivity2 : ComponentActivity() {
                 factory = FilterViewModelFactory(productDao)
             )
             LaunchedEffect(searchText) {
-                filterViewModel.setSearchText(searchText)
                 filterViewModel.setSearchText(searchText)
 
                 val notificationManager =
@@ -302,7 +255,6 @@ fun ProductListScreen(
             ProductCard(
                 product = product,
                 onClick = {
-                    Log.d("DEBUG", "Clicked ${product.product_name}")
                     val intent = Intent(navController.context, Edit::class.java)
                     intent.putExtra("productData", product)
                     navController.context.startActivity(intent)
@@ -424,134 +376,121 @@ fun TopBar(
 
 
 
-        @Composable
-    fun ProductCard(
-        product: ProductData,
-        onClick: () -> Unit,
+@Composable
+fun ProductCard(
+    product: ProductData,
+    onClick: () -> Unit,
+) {
+    val tagsToCheck = listOf("water", "snack", "food")
+
+    // แยก categories เป็น list แก้ lower case
+    val categoriesList = product.categories.split(",").map { it.trim().lowercase() }
+
+    // หา tag ที่ contain คำใน tagsToCheck
+    val selectedCategory = categoriesList.firstOrNull { category ->
+        tagsToCheck.any { tag -> category.contains(tag) }
+    } ?: categoriesList.firstOrNull() ?: ""
+
+    Card(
+        shape = RoundedCornerShape(10.dp),
+        backgroundColor = Color.White,
+        modifier = Modifier
+            .heightIn(min = 160.dp, max = 240.dp)
+            .fillMaxWidth()
+            .border(1.dp, Color(0xFFE0E0E0), RoundedCornerShape(10.dp))
+            .clickable { onClick() },
+        elevation = 4.dp
     ) {
-        Card(
-            shape = RoundedCornerShape(10.dp),
-            backgroundColor = Color.White,
-            modifier = Modifier
-                .heightIn(
-                    min = 160.dp,
-                    max = 240.dp
-                ) // Modified: Removed fixed height, added min/max
-                .fillMaxWidth()
-                .border(1.dp, Color(0xFFE0E0E0), RoundedCornerShape(10.dp))
-                .clickable { onClick() }, // ✅ ใช้ onClick ที่เรารับเข้ามา
-            elevation = 4.dp
-        )
-        {
-            Column(modifier = Modifier.fillMaxSize()) {
-
-                Box(
-                    modifier = Modifier
-                        .padding(8.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Color(0xFFE3F2FD))
-                        .padding(horizontal = 8.dp, vertical = 2.dp)
-                ) {
-                    Text(
-                        text = product.categories,
-                        fontSize = 12.sp,
-                        color = Color(0xFF1976D2),
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth(),
-                    contentAlignment = Alignment.Center
-                ) {
-
-                    // Modified: Image to be scalable and centered
-                    SmartImageLoader(
-                        imagePath = product.image_url,
-                        modifier = Modifier
-                            .fillMaxWidth(0.7f)
-                            .aspectRatio(1f)
-                            .align(Alignment.Center) // Ensure it's centered within the Box
-                    )
-
-                }
-
-                Row(
-                    modifier = Modifier
-                        .background(Color(0xFFBBDEFB))
-                        .padding(8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = product.product_name,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 14.sp,
-                            color = Color.Black,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-
-
-                }
-            }
-        }
-    }
-
-    @Composable
-    fun SmartImageLoader(imagePath: String, modifier: Modifier = Modifier) {
-        val context = LocalContext.current
-
-        when {
-            imagePath.startsWith("http") -> {
-                // โหลดจากเว็บ (URL)
-                Image(
-                    painter = rememberAsyncImagePainter(imagePath),
-                    contentDescription = "Image from web",
-                    modifier = modifier,
-                    contentScale = ContentScale.Crop
+        Column(modifier = Modifier.fillMaxSize()) {
+            Box(
+                modifier = Modifier
+                    .padding(8.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color(0xFFE3F2FD))
+                    .padding(horizontal = 8.dp, vertical = 2.dp)
+            ) {
+                Text(
+                    text = selectedCategory,
+                    fontSize = 12.sp,
+                    color = Color(0xFF1976D2),
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
 
-            imagePath.startsWith("content://") -> {
-                // โหลดจาก URI (ในเครื่อง)
-                val uri = remember(imagePath) { Uri.parse(imagePath) }
-                val bitmap = remember(uri) {
-                    try {
-                        context.contentResolver.openInputStream(uri)?.use {
-                            BitmapFactory.decodeStream(it)
-                        }
-                    } catch (e: Exception) {
-                        null
-                    }
-                }
-
-                bitmap?.let {
-                    Image(
-                        bitmap = it.asImageBitmap(),
-                        contentDescription = "Local image",
-                        modifier = modifier,
-                        contentScale = ContentScale.Crop
-                    )
-                } ?: Box(modifier.background(Color.Gray)) {
-                    Text("โหลดรูปไม่ได้", color = Color.White, modifier = Modifier.padding(8.dp))
-                }
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                SmartImageLoader(
+                    imagePath = product.image_url,
+                    modifier = Modifier
+                        .fillMaxWidth(0.7f)
+                        .aspectRatio(1f)
+                        .align(Alignment.Center)
+                )
             }
 
-            else -> {
-                // ไม่รู้จักฟอร์แมต
-                Box(modifier.background(Color.LightGray)) {
-                    Text("ไม่รองรับ", color = Color.Red, modifier = Modifier.padding(8.dp))
+            Row(
+                modifier = Modifier
+                    .background(Color(0xFFBBDEFB))
+                    .padding(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = product.product_name,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp,
+                        color = Color.Black,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
             }
         }
     }
+}
 
-    @Composable
+
+
+@Composable
+fun SmartImageLoader(
+    imagePath: String,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+
+    if (imagePath.isBlank()) {
+        // รูป default ถ้า imagePath ว่าง
+        Image(
+            painter = painterResource(id = R.drawable.iconapp),
+            contentDescription = "Default Image",
+            modifier = modifier,
+            contentScale = ContentScale.Crop
+        )
+    } else {
+        val painter = rememberAsyncImagePainter(
+            model = imagePath,
+            error = painterResource(id = R.drawable.iconapp), // กรณีโหลดไม่สำเร็จ
+            placeholder = painterResource(id = R.drawable.iconapp)
+        )
+
+        Image(
+            painter = painter,
+            contentDescription = "Product Image",
+            modifier = modifier,
+            contentScale = ContentScale.Crop
+        )
+    }
+}
+
+
+@Composable
     fun BottomBar(
         navController: NavHostController, isSettingsScreen: Boolean,
         onSettingsChanged: (Boolean) -> Unit
@@ -565,10 +504,13 @@ fun TopBar(
             backgroundColor = Color.White,
             elevation = 8.dp,
             contentPadding = PaddingValues(horizontal = 24.dp),
-            modifier = Modifier.height(70.dp)
+            modifier = Modifier.height(100.dp)
+                .padding(bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding())
         ) {
             IconButton(
-                onClick = { context.startActivity(Intent(context, MainActivity2::class.java)) },
+                onClick = { if (context !is MainActivity2) {
+                    context.startActivity(Intent(context, MainActivity2::class.java))
+                } },
                 modifier = Modifier.size(40.dp)
             ) {
                 Icon(
@@ -646,6 +588,12 @@ fun TopBar(
     }
 
 
+fun testWorkerNow(context: Context) {
+    val request = OneTimeWorkRequestBuilder<ExpiryCheckWorker>()
+        .setInitialDelay(0, TimeUnit.SECONDS)
+        .build()
+    WorkManager.getInstance(context).enqueue(request)
+}
 
 
 

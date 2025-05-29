@@ -90,7 +90,7 @@ class ExpiryCheckWorker(
 
 fun sendNotification(context: Context, product: ProductData, mode: String, status: String) {
     val currentHour = LocalTime.now().hour
-    if (currentHour !in 9..21) {
+    if (currentHour !in 8..23) {
         Log.d("ExpiryWorker", "⏰ Outside notification hours (9–21), skipping notification.")
         return
     }

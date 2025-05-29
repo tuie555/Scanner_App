@@ -15,14 +15,14 @@ android {
         applicationId = "com.LingTH.fridge"
         minSdk = 26
         targetSdk = 35
-        versionCode = 2
+        versionCode = 9
         versionName = "1.0"
-
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
         }
     }
+
 
     buildTypes {
         release {
@@ -32,6 +32,9 @@ android {
                 "proguard-rules.pro"
             )
             isShrinkResources = true
+            ndk {
+                debugSymbolLevel = "SYMBOL_TABLE"
+            }
         }
     }
 
@@ -71,8 +74,10 @@ dependencies {
     implementation(libs.material)
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
+    implementation(libs.androidx.storage)
     val camerax_version = "1.5.0-beta01"
     val ktor_version = "3.1.3"
+    implementation("io.coil-kt:coil-compose:2.2.2") // หรือเวอร์ชันล่าสุด
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

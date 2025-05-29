@@ -20,7 +20,7 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.MyApplication"
+        android:theme="@style/Theme.MyApp"
         android:enableOnBackInvokedCallback="true"
         tools:targetApi="tiramisu">
 
@@ -42,7 +42,7 @@
 
         <receiver
             android:enabled="true"
-            android:exported="false"
+            android:exported="true"
             android:name="com.LingTH.fridge.Notification.BootReceiver"
             >
             <intent-filter>

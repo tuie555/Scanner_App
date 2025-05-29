@@ -2,6 +2,9 @@
 
 package com.LingTH.fridge.setting
 import Databases.Settings
+import android.app.Activity
+import android.content.Intent
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -22,15 +25,20 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContentProviderCompat.requireContext
+import androidx.core.content.ContextCompat.startActivity
 import androidx.navigation.NavHostController
+import com.LingTH.fridge.MainActivity2
 import com.LingTH.fridge.setting.components.OptionSelector
 import com.LingTH.fridge.setting.components.SettingsItem
 import com.LingTH.fridge.setting.components.SettingsTopBar
 import com.LingTH.fridge.setting.components.SingleOptionSelector
 import com.LingTH.fridge.ui.theme.getAdaptiveHorizontalPadding
+import io.ktor.network.selector.SelectInterest.Companion.flags
 import viewmodel.SettingsViewModel
 
 
@@ -39,15 +47,26 @@ fun SettingsScreen(
     navController: NavHostController,
     viewModel: SettingsViewModel
 ) {
-    var visibleSelector by remember { mutableStateOf(VisibleSelector.NONE) }
-    var selectAlertbeforeEX by remember { mutableStateOf(listOf<String>()) }
-    var selectedAlertMode by remember { mutableStateOf(listOf<String>()) }
-    var selectRepeatAlert by remember { mutableStateOf(listOf<String>()) }
-    var email by remember { mutableStateOf("") }
 
+    var visibleSelector by remember { mutableStateOf(VisibleSelector.NONE) }
+    var selectAlertbeforeEX by remember { mutableStateOf(listOf("3 days")) } // default: 3 days
+    var selectedAlertMode by remember { mutableStateOf(listOf("Normal")) }   // default: Normal
+    var selectRepeatAlert by remember { mutableStateOf(listOf("4")) }        // default: every 4 time
+    var email by remember { mutableStateOf("") }
+    val context = LocalContext.current
     val scrollState = rememberScrollState()
     val settingsState by viewModel.settings.collectAsState()
+    BackHandler {
+        val intent = Intent(context, MainActivity2::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        context.startActivity(intent)
 
+        // Optional: ปิด Compose Activity ถ้าคุณไม่อยากให้กด back แล้วกลับมาอีก
+        if (context is Activity) {
+            context.finish()
+        }
+    }
     // โหลดค่าจาก Database ครั้งแรก
     LaunchedEffect(settingsState) {
         settingsState?.let {
@@ -64,7 +83,7 @@ fun SettingsScreen(
     val selectedRepeatAlertText = selectRepeatAlert.joinToString(",")
 
     val alertOptions = listOf(
-        "1 day", "2 days", "3 days", "4 days", "5 days", "1 week", "2 weeks",
+        "0 days","1 day", "2 days", "3 days", "4 days", "5 days", "1 week", "2 weeks",
         "3 weeks", "4 weeks", "1 month", "2 months", "3 months", "6 months"
     )
     val alertModeOptionsList = listOf("Normal", "E-Girlfriend", "Aggressive", "Friendly")
@@ -89,10 +108,9 @@ fun SettingsScreen(
                     VisibleSelector.NONE else VisibleSelector.ALERT_BEFORE_EXPIRED
             }
             AnimatedVisibility(visible = visibleSelector == VisibleSelector.ALERT_BEFORE_EXPIRED) {
-                OptionSelector("Select Alert before expired:", alertOptions, selectAlertbeforeEX) { option ->
-                    selectAlertbeforeEX =
-                        if (option in selectAlertbeforeEX) selectAlertbeforeEX - option else selectAlertbeforeEX + option
-                }
+                SingleOptionSelector("Select Alert before expired:", alertOptions, selectAlertbeforeEX.firstOrNull() ?: "") {
+
+                    selectAlertbeforeEX = it?.let { listOf(it) } ?: emptyList()}
             }
 
             SettingsItem("Alert Mode:", selectedAlertModeText) {
