@@ -2,6 +2,7 @@ package com.LingTH.fridge
 
 
 import Databases.ProductData
+import ExpiryCheckWorker
 import InventoryDatabase
 import android.annotation.SuppressLint
 import android.app.NotificationChannel
@@ -83,6 +84,8 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
 import coil.compose.rememberAsyncImagePainter
 import com.LingTH.fridge.barcode.Edit
 import com.LingTH.fridge.barcode.Scanner
@@ -128,6 +131,8 @@ class MainActivity2 : ComponentActivity() {
                 }
             }
         }
+        val workRequest = OneTimeWorkRequestBuilder<ExpiryCheckWorker>().build()
+        WorkManager.getInstance(this).enqueue(workRequest)
         setContent {
             val navController = rememberNavController()
             var isSettingsScreen by remember { mutableStateOf(false) }
