@@ -66,8 +66,11 @@ fun SandFscreen(
     val selectAdded = selectedAdded.joinToString(", ")
     val selectAddedPhoto = selectedAddedPhoto.joinToString(", ")
     val selectExpirationDate = selectedExpirationDate.joinToString(", ")
+    val allProducts by filterViewModel.allProducts.collectAsState()
 
     val categories by filterViewModel.allCategories.collectAsState()
+    val primaryCategories = allProducts.map { getPrimaryCategory(it.categories) }.distinct()
+
     val productsWithPhoto by filterViewModel.allProductsWithPhotos.collectAsState()
     val productsWithoutPhoto by filterViewModel.allProductsWithoutPhotos.collectAsState()
     val expirationDates by filterViewModel.allExpirationDates.collectAsState()
@@ -157,7 +160,7 @@ fun SandFscreen(
             visibleSelector = toggleSelector(visibleSelector, VisibleSelector.CATEGORY)
         }
         AnimatedVisibility(visibleSelector == VisibleSelector.CATEGORY) {
-            OptionSelector("Category:", categories, selectedCategory) { option ->
+            OptionSelector("Category:", primaryCategories , selectedCategory) { option ->
                 val updated = if (option in selectedCategory) selectedCategory - option else selectedCategory + option
                 filterViewModel.setSelectedCategory(updated)
             }
@@ -284,4 +287,12 @@ private fun truncateToMidnight(timestamp: Long): Long {
         set(java.util.Calendar.MILLISECOND, 0)
     }
     return calendar.timeInMillis
+}
+
+fun getPrimaryCategory(categoriesString: String): String {
+    val tagsToCheck = listOf("water", "snack", "food")
+    val categoriesList = categoriesString.split(",").map { it.trim().lowercase() }
+    return categoriesList.firstOrNull { category ->
+        tagsToCheck.any { tag -> category.contains(tag) }
+    } ?: categoriesList.firstOrNull() ?: ""
 }

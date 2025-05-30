@@ -1,23 +1,22 @@
 package com.LingTH.fridge
-import Databases.Productviewmodel
-import Databases.ProductData
-import ExpiryCheckWorker
-import android.annotation.SuppressLint
 
+
+import Databases.ProductData
+import InventoryDatabase
+import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.graphics.BitmapFactory
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.annotation.RequiresApi
+import androidx.appcompat.app.AlertDialog
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -35,6 +34,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
@@ -43,27 +43,17 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-//noinspection UsingMaterialAndMaterial3Libraries
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.BottomAppBar
-//noinspection UsingMaterialAndMaterial3Libraries
 import androidx.compose.material.Card
-//noinspection UsingMaterialAndMaterial3Libraries
 import androidx.compose.material.Icon
-//noinspection UsingMaterialAndMaterial3Libraries
 import androidx.compose.material.IconButton
-//noinspection UsingMaterialAndMaterial3Libraries
 import androidx.compose.material.LocalTextStyle
-//noinspection UsingMaterialAndMaterial3Libraries
 import androidx.compose.material.Scaffold
-//noinspection UsingMaterialAndMaterial3Libraries
 import androidx.compose.material.Text
-//noinspection UsingMaterialAndMaterial3Libraries
-import androidx.compose.material.TextField
-//noinspection UsingMaterialAndMaterial3Libraries
-import androidx.compose.material.TextFieldDefaults
-//noinspection UsingMaterialAndMaterial3Libraries
 import androidx.compose.material.TopAppBar
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.FilterAlt
 import androidx.compose.material.icons.filled.List
@@ -83,10 +73,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
@@ -94,27 +86,8 @@ import androidx.navigation.compose.rememberNavController
 import coil.compose.rememberAsyncImagePainter
 import com.LingTH.fridge.barcode.Edit
 import com.LingTH.fridge.barcode.Scanner
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
-import androidx.core.content.ContextCompat
-import androidx.work.ExistingPeriodicWorkPolicy
-import androidx.work.PeriodicWorkRequestBuilder
-import androidx.work.WorkManager
 import com.LingTH.fridge.sortandfilter.FilterViewModel
 import com.LingTH.fridge.sortandfilter.FilterViewModelFactory
-import java.util.concurrent.TimeUnit
-import androidx.appcompat.app.AlertDialog
-import android.provider.Settings
-import android.widget.Toast
-import androidx.activity.result.ActivityResultLauncher
-import androidx.compose.foundation.layout.navigationBars
-import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.launch
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.ui.res.painterResource
-import androidx.work.OneTimeWorkRequestBuilder
 
 
 class MainActivity2 : ComponentActivity() {
@@ -155,16 +128,12 @@ class MainActivity2 : ComponentActivity() {
                 }
             }
         }
-        testWorkerNow(this) // ย้ายมาไว้ก่อน setContent
         setContent {
             val navController = rememberNavController()
             var isSettingsScreen by remember { mutableStateOf(false) }
             var searchText by remember { mutableStateOf("") }
             var isFilterScreen by remember { mutableStateOf(false) }
             val context = LocalContext.current
-            val viewmodel: Productviewmodel =
-                viewModel(factory = ViewModelProvider.AndroidViewModelFactory.getInstance(context.applicationContext as android.app.Application))
-            val products by viewmodel.productFlow.collectAsState(initial = emptyList())
             val database = InventoryDatabase.getDatabase(context)
             val productDao = database.productDao()
             val filterViewModel: FilterViewModel = viewModel(
@@ -187,7 +156,11 @@ class MainActivity2 : ComponentActivity() {
 
 
             }
-
+            LaunchedEffect(navController) {
+                navController.currentBackStackEntryFlow.collect { backStackEntry ->
+                    isSettingsScreen = backStackEntry.destination.route == "settings"
+                }
+            }
             Scaffold(
                 topBar = {
 
@@ -276,8 +249,8 @@ fun TopBar(
     navController: NavHostController
 ) {
     val insets = WindowInsets.statusBars.asPaddingValues()
-    val configuration = LocalConfiguration.current
-    val screenWidthDp = configuration.screenWidthDp
+
+
 
     TopAppBar(
         backgroundColor = Color.White,
@@ -463,7 +436,7 @@ fun SmartImageLoader(
     imagePath: String,
     modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
+
 
     if (imagePath.isBlank()) {
         // รูป default ถ้า imagePath ว่าง
@@ -490,6 +463,7 @@ fun SmartImageLoader(
 }
 
 
+@SuppressLint("ConfigurationScreenWidthHeight")
 @Composable
     fun BottomBar(
         navController: NavHostController, isSettingsScreen: Boolean,
@@ -499,7 +473,7 @@ fun SmartImageLoader(
         val screenWidth = LocalConfiguration.current.screenWidthDp.dp
         val iconSize = (screenWidth * 0.1f).coerceIn(24.dp, 48.dp)
         val context = LocalContext.current
-        var isClicked by remember { mutableStateOf(false) }
+        val isClicked by remember { mutableStateOf(false) }
         BottomAppBar(
             backgroundColor = Color.White,
             elevation = 8.dp,
@@ -508,13 +482,14 @@ fun SmartImageLoader(
                 .padding(bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding())
         ) {
             IconButton(
-                onClick = { if (context !is MainActivity2) {
-                    context.startActivity(Intent(context, MainActivity2::class.java))
-                } },
+                onClick = { navController.navigate("productList") {
+                    popUpTo(navController.graph.startDestinationId) { inclusive = false } // ถ้าคุณไม่อยากย้อนกลับมาหน้านี้อีก
+                    launchSingleTop = true
+                }},
                 modifier = Modifier.size(40.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Default.List,
+                    imageVector = Icons.AutoMirrored.Filled.List,
                     contentDescription = "Menu",
                     tint = Color.Black,
                     modifier = Modifier.size(iconSize ) // Adjusted size
@@ -575,25 +550,10 @@ fun SmartImageLoader(
         }
     }
 
-    fun scheduleRepeatingWork(context: Context, intervalHours: Int) {
-        val workRequest = PeriodicWorkRequestBuilder<ExpiryCheckWorker>(
-            intervalHours.toLong(), TimeUnit.HOURS
-        ).build()
-
-        WorkManager.getInstance(context).enqueueUniquePeriodicWork(
-            "ExpiryCheckWork",
-            ExistingPeriodicWorkPolicy.REPLACE,
-            workRequest
-        )
-    }
 
 
-fun testWorkerNow(context: Context) {
-    val request = OneTimeWorkRequestBuilder<ExpiryCheckWorker>()
-        .setInitialDelay(0, TimeUnit.SECONDS)
-        .build()
-    WorkManager.getInstance(context).enqueue(request)
-}
+
+
 
 
 

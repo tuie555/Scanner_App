@@ -1,9 +1,8 @@
-@file:OptIn(ExperimentalMaterial3Api::class)
-
 package com.LingTH.fridge.setting
 import Databases.Settings
 import android.app.Activity
 import android.content.Intent
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Column
@@ -29,16 +28,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.ContentProviderCompat.requireContext
-import androidx.core.content.ContextCompat.startActivity
 import androidx.navigation.NavHostController
 import com.LingTH.fridge.MainActivity2
-import com.LingTH.fridge.setting.components.OptionSelector
 import com.LingTH.fridge.setting.components.SettingsItem
 import com.LingTH.fridge.setting.components.SettingsTopBar
 import com.LingTH.fridge.setting.components.SingleOptionSelector
 import com.LingTH.fridge.ui.theme.getAdaptiveHorizontalPadding
-import io.ktor.network.selector.SelectInterest.Companion.flags
 import viewmodel.SettingsViewModel
 
 
@@ -145,6 +140,7 @@ fun SettingsScreen(
                 )
 
                 viewModel.saveSettings(settings)
+                Toast.makeText(context, "Save successful", Toast.LENGTH_SHORT).show()
             },
             modifier = Modifier.fillMaxWidth() // Added fillMaxWidth
             ) {
@@ -163,6 +159,5 @@ enum class VisibleSelector {
     ALERT_BEFORE_EXPIRED,
     ALERT_MODE,
     REPEAT_ALERT,
-    ChangeMail
 }
 

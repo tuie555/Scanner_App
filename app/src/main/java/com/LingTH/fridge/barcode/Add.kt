@@ -86,6 +86,10 @@ import com.LingTH.fridge.ui.theme.getAdaptiveHorizontalPadding
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.Date
 import java.util.Locale
 
@@ -319,6 +323,7 @@ fun saveProductIfValid(
 
 
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CenterAlignedTopAppBarExample(
     barcode: String,
@@ -539,19 +544,11 @@ fun ExpirationDateSelector(
         initialSelectedDateMillis = selectedDate?.let { convertDateToMillis(it) } ?: currentDateMillis
     )
 
-    // Trigger `onDateChange` when the date changes and dialog is confirmed
-    LaunchedEffect(datePickerState.selectedDateMillis) {
-        // This effect will run when selectedDateMillis changes.
-        // The actual call to onDateChange will happen upon dialog confirmation if needed,
-        // or can be directly updated if the dialog interaction confirms selection.
-        // For this setup, onDateChange is called when OK is clicked.
-    }
-
     Column(modifier = Modifier.padding(0.dp)) {
         inputNotFile(
             label = "Expiration Date",
             value = datePickerState.selectedDateMillis?.let { convertMillisToDate(it) } ?: "Select Date",
-            onToggleVisible = { showDatePickerDialog = true } // Open dialog on click
+            onToggleVisible = { showDatePickerDialog = true }
         )
 
         if (showDatePickerDialog) {
@@ -560,20 +557,23 @@ fun ExpirationDateSelector(
                 confirmButton = {
                     TextButton(onClick = {
                         showDatePickerDialog = false
-                        // Update the date when "OK" is clicked
-                        datePickerState.selectedDateMillis?.let { millis ->
+                        val millis = datePickerState.selectedDateMillis
+                        if (millis != null) {
                             val date = convertMillisToDate(millis)
                             Log.d("imon", "Selected date in millis: $millis")
                             Log.d("imon", "Converted date: $date")
                             onDateChange(date)
+                        } else {
+                            Log.e("imon", "No date selected in DatePicker")
                         }
                     }) {
                         Text("OK")
                     }
-                }
-                ,
+                },
                 dismissButton = {
-                    TextButton(onClick = { showDatePickerDialog = false }) { Text("Cancel") }
+                    TextButton(onClick = { showDatePickerDialog = false }) {
+                        Text("Cancel")
+                    }
                 }
             ) {
                 DatePicker(state = datePickerState, showModeToggle = false)
@@ -581,23 +581,31 @@ fun ExpirationDateSelector(
         }
     }
 }
-fun convertDateToMillis(date: String): Long {
+
+fun convertDateToMillis(date: String): Long? {
     return try {
-        val formatter = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-        formatter.parse(date)?.time ?: System.currentTimeMillis()
+        val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy", Locale.getDefault())
+        val localDate = LocalDate.parse(date, formatter)
+        localDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
     } catch (e: Exception) {
-        System.currentTimeMillis()
+        null
     }
 }
 
-// Removed DatePickerCard as it's no longer used
-
 fun convertMillisToDate(millis: Long): String {
-    if (millis == 0L) return "No date selected"
-
-    val formatter = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-    return formatter.format(Date(millis))
+    return try {
+        val localDate = Instant.ofEpochMilli(millis)
+            .atZone(ZoneId.systemDefault())
+            .toLocalDate()
+        localDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy", Locale.getDefault()))
+    } catch (e: Exception) {
+        "Invalid date"
+    }
 }
+
+
+
+
 
 
 @Composable
@@ -609,21 +617,23 @@ fun DayAdd(
 
     var day by remember { mutableStateOf(selectedDay ?: today) }
 
-    // Trigger onDayChange only once if the initial date is not set
     LaunchedEffect(Unit) {
         if (selectedDay == null) {
             onDayChange(today)
         }
     }
+
     Column(modifier = Modifier.padding(1.dp)) {
         inputNotFile(
             label = "Add Day",
-            value = day
-        ) {
-            // สามารถเปิด DatePicker เมื่อผู้ใช้กดได้ ถ้าต้องการ
-        }
+            value = day,
+            onToggleVisible = {
+                // Optional: add DatePicker if needed
+            }
+        )
     }
 }
+
 
 
 

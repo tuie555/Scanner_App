@@ -1,6 +1,7 @@
 package Databases
 
 import android.os.Build
+import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.room.Entity
 import androidx.room.PrimaryKey
@@ -9,6 +10,7 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 import java.time.Instant
+import java.time.ZoneOffset
 
 @Entity(tableName = "product_table")
 data class ProductData(
@@ -29,13 +31,22 @@ fun ProductData.daysUntilExpiry(): Long? {
 
     return try {
         val expirationLocalDate = Instant.ofEpochMilli(expiryDate)
-            .atZone(ZoneId.systemDefault())
+            .atZone(ZoneOffset.UTC) // ✅ ปรับตรงนี้
             .toLocalDate()
 
-        val currentDate = LocalDate.now()
-        ChronoUnit.DAYS.between(currentDate, expirationLocalDate)
+        val currentDate = LocalDate.now(ZoneOffset.UTC) // ✅ ปรับตรงนี้ด้วย
+
+        val days = ChronoUnit.DAYS.between(currentDate, expirationLocalDate)
+
+        // ✅ เพิ่ม Log ตรงนี้เพื่อตรวจสอบ
+        Log.d("daysUntilExpiry", "Now: $currentDate, Exp: $expirationLocalDate, Days left: $days")
+
+        days
     } catch (e: Exception) {
-        null  // กรณีที่เกิดข้อผิดพลาดในการแปลงวันที่
+        Log.e("daysUntilExpiry", "❌ Error parsing date: ${e.message}")
+        null
     }
 }
+
+
 

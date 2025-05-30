@@ -312,7 +312,7 @@ fun CenterAlignedTopAppBarExampleEdit(
                     titleContentColor = Color.Black,
                 ),
                 title = {
-                    Text("Enter Product Information", maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text("Edit Product Information", maxLines = 1, overflow = TextOverflow.Ellipsis)
                 },
                 navigationIcon = {
                     BackButtonEdit(onBackClick = {
@@ -705,7 +705,7 @@ fun SettingsScreenaddEdit(
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     OptionSelector(
-                        title = "Select a category:",
+                        title = "Enter a category:",
                         options = alertOptions,
                         selectedOptions = selectAlertbeforeEX
                     ) { option ->
