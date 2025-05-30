@@ -62,5 +62,5 @@ class BootReceiver : BroadcastReceiver() {
         WorkManager.getInstance(context).enqueue(request)
         Log.d("BootReceiver", "⏰ Work scheduled at $time with delay ${delay / 1000}s")
     }
-}
 
+}

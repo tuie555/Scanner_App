@@ -5,13 +5,16 @@ import Databases.ProductData
 import ExpiryCheckWorker
 import InventoryDatabase
 import android.annotation.SuppressLint
+import android.app.AlarmManager
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -84,13 +87,18 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
+import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import coil.compose.rememberAsyncImagePainter
+import com.LingTH.fridge.Notification.BootReceiver
 import com.LingTH.fridge.barcode.Edit
 import com.LingTH.fridge.barcode.Scanner
 import com.LingTH.fridge.sortandfilter.FilterViewModel
 import com.LingTH.fridge.sortandfilter.FilterViewModelFactory
+import java.util.concurrent.TimeUnit
+
 
 
 class MainActivity2 : ComponentActivity() {
@@ -131,8 +139,11 @@ class MainActivity2 : ComponentActivity() {
                 }
             }
         }
-        val workRequest = OneTimeWorkRequestBuilder<ExpiryCheckWorker>().build()
-        WorkManager.getInstance(this).enqueue(workRequest)
+        scheduleRepeatingAlarm(this)
+
+
+
+
         setContent {
             val navController = rememberNavController()
             var isSettingsScreen by remember { mutableStateOf(false) }
@@ -556,6 +567,28 @@ fun SmartImageLoader(
     }
 
 
+fun scheduleRepeatingAlarm(context: Context) {
+    val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+    val intent = Intent(context, BootReceiver::class.java)
+    val pendingIntent = PendingIntent.getBroadcast(
+        context,
+        0,
+        intent,
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+    )
+
+    val intervalMillis = 10_000L // 10 วินาที
+
+    val startTime = System.currentTimeMillis() + 5_000L // เริ่มหลังจากนี้ 5 วิ
+
+    // 🔁 ตั้ง alarm แบบทำซ้ำ (ในบางรุ่นอาจไม่แม่น แต่ใช้ได้ดีพอสำหรับกรณีทั่วไป)
+    alarmManager.setRepeating(
+        AlarmManager.RTC_WAKEUP,
+        startTime,
+        intervalMillis,
+        pendingIntent
+    )
+}
 
 
 

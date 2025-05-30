@@ -183,7 +183,7 @@ fun CameraOverlayUI(cameraControl: CameraControl?) {
 
         // ข้อความอยู่ใต้กรอบ
         Text(
-            text = "สแกนบาร์โค้ด",
+            text = "Scan Barcode",
             color = Color.White,
             fontSize = 36.sp,
             modifier = Modifier

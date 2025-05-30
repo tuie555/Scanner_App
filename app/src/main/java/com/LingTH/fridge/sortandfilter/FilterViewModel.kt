@@ -3,6 +3,7 @@ package com.LingTH.fridge.sortandfilter
 import Databases.ProductDao
 import Databases.ProductData
 import android.annotation.SuppressLint
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.Flow
@@ -122,7 +123,17 @@ class FilterViewModel(private val dao: ProductDao) : ViewModel() {
             val expirationDate = product.expiration_date
             val addDay = product.add_day
 
-            val matchesCategory = selectedCategory.value.isEmpty() || selectedCategory.value.contains(product.categories)
+            val matchesCategory = selectedCategory.value.isEmpty() || selectedCategory.value.any { selected ->
+                val tags = product.categories.split(",")
+                    .map { it.trim().lowercase() }
+
+                Log.d("Filter", "🔍 Selected: $selected | Tags: $tags")
+
+                tags.any { tag ->
+                    tag.contains(selected.lowercase())
+                }
+            }
+
 
             val matchesExpiredIn = selectedExpiredIn.value.isEmpty() || (
                     expirationDate != null && selectedExpiredIn.value.any { targetTimestamp ->
