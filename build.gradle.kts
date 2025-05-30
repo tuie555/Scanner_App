@@ -9,13 +9,3 @@ plugins {
     alias(libs.plugins.sonarqube)
     alias(libs.plugins.versions)
 }
-sonar {
-    properties {
-        property("sonar.projectKey", "tuie555_Scanner_App")
-        property("sonar.host.url", "https://sonarcloud.io")
-        property ("sonar.organization", "scannerapp")
-        property("sonar.sourceEncoding", "UTF-8")
-        property("sonar.androidLint.reportPaths", "app/build/reports/lint-results.xml")
-
-    }
-}

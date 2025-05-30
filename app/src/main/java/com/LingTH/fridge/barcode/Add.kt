@@ -726,12 +726,8 @@ fun SettingsScreenadd(
     }
 
 
-    val alertOptions = remember {
-        mutableStateListOf<String>().apply {
-            addAll(selectAlertbeforeEX)
-            add("+")
-        }
-    }
+    val alertOptions = selectAlertbeforeEX.toList() + "+"
+
 
     var isAddingCustomOption by remember { mutableStateOf(false) }
     var customOptionText by remember { mutableStateOf("") }
@@ -776,10 +772,11 @@ fun SettingsScreenadd(
                                 selectAlertbeforeEX.add(option)
                             }
 
-                            val updatedCategories = selectAlertbeforeEX.joinToString(", ") { it }
+                            val updatedCategories = selectAlertbeforeEX.joinToString(", ")
                             onValueChange(updatedCategories)
                         }
                     }
+
                 }
             }
 
@@ -804,7 +801,6 @@ fun SettingsScreenadd(
                         Button(
                             onClick = {
                                 if (customOptionText.isNotBlank()) {
-                                    alertOptions.add(alertOptions.size - 1, customOptionText)
                                     selectAlertbeforeEX.add(customOptionText)
                                     customOptionText = ""
                                     isAddingCustomOption = false

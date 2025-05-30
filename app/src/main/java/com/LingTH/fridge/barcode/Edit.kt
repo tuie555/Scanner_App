@@ -648,6 +648,7 @@ fun getTodayDateEdit(): String {
     val formatter = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
     return formatter.format(Date())
 }
+
 @Composable
 fun SettingsScreenaddEdit(
     categories: String,
@@ -658,22 +659,20 @@ fun SettingsScreenaddEdit(
     val selectAlertbeforeEX = remember { mutableStateListOf<String>() }
 
     // Load existing categories once when Composable loads
-    LaunchedEffect(Unit) {
+    LaunchedEffect(categories) {
         if (selectAlertbeforeEX.isEmpty() && categories.isNotBlank()) {
             val initial = categories
                 .split(",")
                 .map { it.trim().removePrefix("en:") }
                 .filter { it.isNotBlank() }
+            selectAlertbeforeEX.clear()
             selectAlertbeforeEX.addAll(initial)
         }
     }
 
-    val alertOptions = remember {
-        mutableStateListOf<String>().apply {
-            addAll(selectAlertbeforeEX)
-            add("+")
-        }
-    }
+
+    val alertOptions = selectAlertbeforeEX.toList() + "+"
+
 
     var isAddingCustomOption by remember { mutableStateOf(false) }
     var customOptionText by remember { mutableStateOf("") }
@@ -705,7 +704,7 @@ fun SettingsScreenaddEdit(
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     OptionSelector(
-                        title = "Enter a category:",
+                        title = "Select a category:",
                         options = alertOptions,
                         selectedOptions = selectAlertbeforeEX
                     ) { option ->
@@ -718,10 +717,11 @@ fun SettingsScreenaddEdit(
                                 selectAlertbeforeEX.add(option)
                             }
 
-                            val updatedCategories = selectAlertbeforeEX.joinToString(", ") { "en:$it" }
+                            val updatedCategories = selectAlertbeforeEX.joinToString(", ")
                             onValueChange(updatedCategories)
                         }
                     }
+
                 }
             }
 
@@ -746,12 +746,11 @@ fun SettingsScreenaddEdit(
                         Button(
                             onClick = {
                                 if (customOptionText.isNotBlank()) {
-                                    alertOptions.add(alertOptions.size - 1, customOptionText)
                                     selectAlertbeforeEX.add(customOptionText)
                                     customOptionText = ""
                                     isAddingCustomOption = false
 
-                                    val updatedCategories = selectAlertbeforeEX.joinToString(", ") { "en:$it" }
+                                    val updatedCategories = selectAlertbeforeEX.joinToString(", ") { it }
                                     onValueChange(updatedCategories)
                                 }
                             },
