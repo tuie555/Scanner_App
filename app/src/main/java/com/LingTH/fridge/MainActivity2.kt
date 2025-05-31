@@ -25,6 +25,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -39,6 +40,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
@@ -46,6 +48,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.BottomAppBar
@@ -63,6 +66,8 @@ import androidx.compose.material.icons.filled.FilterAlt
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.ripple
+import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -73,6 +78,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
@@ -481,68 +489,58 @@ fun SmartImageLoader(
 
 @SuppressLint("ConfigurationScreenWidthHeight")
 @Composable
-    fun BottomBar(
-        navController: NavHostController, isSettingsScreen: Boolean,
-        onSettingsChanged: (Boolean) -> Unit
-    ) {
-        val blue400 = Color(0xFF6B82A8)
-        val screenWidth = LocalConfiguration.current.screenWidthDp.dp
-        val iconSize = (screenWidth * 0.1f).coerceIn(24.dp, 48.dp)
-        val context = LocalContext.current
-        val isClicked by remember { mutableStateOf(false) }
+fun BottomBar(
+    navController: NavHostController,
+    isSettingsScreen: Boolean,
+    onSettingsChanged: (Boolean) -> Unit
+) {
+    val blue400 = Color(0xFF6B82A8)
+    val screenWidth = LocalConfiguration.current.screenWidthDp.dp
+    val iconSize = (screenWidth * 0.08f).coerceIn(40.dp, 50.dp)
+    val context = LocalContext.current
+    var isClicked by remember { mutableStateOf(false) }
+
+    Box {
+        // Bottom App Bar
         BottomAppBar(
             backgroundColor = Color.White,
-            elevation = 8.dp,
-            contentPadding = PaddingValues(horizontal = 24.dp),
-            modifier = Modifier.height(100.dp)
-                .padding(bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding())
+            elevation = 0.dp, // ปิดเงาเพื่อให้เส้นชัด
+            contentPadding = PaddingValues(horizontal = 20.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(70.dp)
+                .drawBehind {
+                    // วาดเส้นขอบบน
+                    drawLine(
+                        color = Color.Black,
+                        start = Offset(0f, 0f),
+                        end = Offset(size.width, 0f),
+                        strokeWidth = 2.dp.toPx() // ความหนาของเส้น
+                    )
+                }
         ) {
             IconButton(
-                onClick = { navController.navigate("productList") {
-                    popUpTo(navController.graph.startDestinationId) { inclusive = false } // ถ้าคุณไม่อยากย้อนกลับมาหน้านี้อีก
-                    launchSingleTop = true
-                }},
-                modifier = Modifier.size(40.dp)
+                onClick = {
+                    navController.navigate("productList") {
+                        popUpTo(navController.graph.startDestinationId) { inclusive = false }
+                        launchSingleTop = true
+                    }
+                },
+                modifier = Modifier.size(50.dp)
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.List,
                     contentDescription = "Menu",
                     tint = Color.Black,
-                    modifier = Modifier.size(iconSize ) // Adjusted size
+                    modifier = Modifier.size(iconSize)
                 )
-            }
-            Spacer(modifier = Modifier.weight(1f))
-
-            // Oval Floating Action Button
-            Box(
-                modifier = Modifier
-                    .size(width = 100.dp, height = 60.dp) // Set width and height for oval shape
-                    .clip(RoundedCornerShape(28.dp)) // Use RoundedCornerShape to create an oval
-                    .background(blue400) // Background color
-                    .clickable(onClick = {
-                        context.startActivity(
-                            Intent(
-                                context,
-                                Scanner::class.java
-                            )
-                        )
-                    }), // Handle click
-                contentAlignment = Alignment.Center // Center the icon
-            ) {
-
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Add",
-                    modifier = Modifier.size(iconSize ), // Adjusted size
-                    tint = Color.White // Icon color
-                )
-
             }
 
             Spacer(modifier = Modifier.weight(1f))
+            Spacer(modifier = Modifier.weight(1f))
+
             IconButton(
                 onClick = {
-
                     if (isSettingsScreen) {
                         navController.popBackStack()
                         onSettingsChanged(false)
@@ -550,21 +548,54 @@ fun SmartImageLoader(
                         navController.navigate("settings")
                         onSettingsChanged(true)
                     }
+                    isClicked = !isClicked
                 },
-
-                modifier = Modifier.size(40.dp) // Change background color
-            )
-            {
+                modifier = Modifier.size(50.dp)
+            ) {
                 Icon(
                     imageVector = Icons.Default.Settings,
-                    contentDescription = "settings",
-                    tint = (if (isClicked) Color.Black else Color(0xFF6B7280)),
-                    modifier = Modifier.size(iconSize ) // Adjusted size
+                    contentDescription = "Settings",
+                    tint = if (isClicked) Color.Black else Color(0xFF6B7280),
+                    modifier = Modifier.size(iconSize)
                 )
             }
-
         }
+
+
+        // FAB Style Button - Lifting + Animation
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .offset(y = (-40).dp)
+                .shadow(30.dp, RoundedCornerShape(30.dp), clip = false)
+                .clip(RoundedCornerShape(30.dp))
+                .background(blue400)
+                .clickable {
+                    context.startActivity(Intent(context, Scanner::class.java))
+                }
+                .size(width = 130.dp, height = 70.dp), // ปุ่มรูปเม็ดยา
+            contentAlignment = Alignment.Center
+        ) {
+            // วงกลมโปร่งกลาง + ขอบดำ
+            Box(
+                modifier = Modifier
+                    .size(50.dp)
+                    .border(width = 4.dp, color = Color.Black, shape = CircleShape), // ขอบดำ หนา 4dp
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Add",
+                    tint = Color.Black,
+                    modifier = Modifier.size(45.dp)
+                )
+            }
+        }
+
     }
+}
+
+
 
 
 fun scheduleRepeatingAlarm(context: Context) {
