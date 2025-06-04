@@ -1,4 +1,4 @@
-package com.LingTH.fridge.barcode
+package com.LingTH.fridge.Barcode
 
 import Databases.ProductData
 import android.util.Log

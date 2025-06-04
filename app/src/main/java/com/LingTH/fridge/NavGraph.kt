@@ -1,6 +1,6 @@
 package com.LingTH.fridge
 
-import ViewModels.SettingsViewModelFactory
+import com.LingTH.fridge.Setting.viewmodel.SettingsViewModelFactory
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
@@ -8,11 +8,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.LingTH.fridge.setting.SettingsScreen
+import com.LingTH.fridge.Setting.SettingsScreen
 import com.LingTH.fridge.sortandfilter.FilterViewModel
 import com.LingTH.fridge.sortandfilter.FilterViewModelFactory
 import com.LingTH.fridge.sortandfilter.SandFscreen
-import viewmodel.SettingsViewModel
+import com.LingTH.fridge.Setting.viewmodel.SettingsViewModel
 
 // NavigationGraph.kt
 @Composable

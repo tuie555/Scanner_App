@@ -15,6 +15,8 @@ import kotlinx.coroutines.launch
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.Instant
+import java.time.LocalDate
+import java.time.temporal.ChronoUnit
 import java.util.Locale
 
 class FilterViewModel(private val dao: ProductDao) : ViewModel() {
@@ -144,16 +146,13 @@ class FilterViewModel(private val dao: ProductDao) : ViewModel() {
                     )
 
 
-            val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy", Locale.getDefault())
-            val matchesAdded = selectedAdded.value.isEmpty() || (
-                    addDay != null && selectedAdded.value.contains(
-                        Instant.ofEpochMilli(addDay)
-                            .atZone(ZoneId.systemDefault())
-                            .toLocalDate()
-                            .format(formatter)
-                    )
-                    )
+            val daysAgo = ChronoUnit.DAYS.between(
+                Instant.ofEpochMilli(addDay!!).atZone(ZoneId.systemDefault()).toLocalDate(),
+                LocalDate.now()
+            )
 
+            val relativeString = "Added $daysAgo day(s) ago"
+            val matchesAdded = selectedAdded.value.isEmpty() || selectedAdded.value.contains(relativeString)
 
             val matchesPhoto = selectedAddedPhoto.value.isEmpty() || (
                     selectedAddedPhoto.value.contains("Added Photo") && product.image_url.isNotBlank() ||

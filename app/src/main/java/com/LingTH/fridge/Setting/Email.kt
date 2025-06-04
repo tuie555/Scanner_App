@@ -1,4 +1,4 @@
-package com.LingTH.fridge.setting
+package com.LingTH.fridge.Setting
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable

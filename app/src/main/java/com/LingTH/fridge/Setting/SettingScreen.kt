@@ -1,5 +1,4 @@
-package com.LingTH.fridge.setting
-import Databases.Settings
+package com.LingTH.fridge.Setting
 import android.app.Activity
 import android.content.Intent
 import android.widget.Toast
@@ -14,7 +13,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -30,11 +28,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.LingTH.fridge.MainActivity2
-import com.LingTH.fridge.setting.components.SettingsItem
-import com.LingTH.fridge.setting.components.SettingsTopBar
-import com.LingTH.fridge.setting.components.SingleOptionSelector
+import com.LingTH.fridge.Setting.components.SettingsItem
+import com.LingTH.fridge.Setting.components.SettingsTopBar
+import com.LingTH.fridge.Setting.components.SingleOptionSelector
 import com.LingTH.fridge.ui.theme.getAdaptiveHorizontalPadding
-import viewmodel.SettingsViewModel
+import com.LingTH.fridge.Setting.viewmodel.SettingsViewModel
 
 
 @Composable

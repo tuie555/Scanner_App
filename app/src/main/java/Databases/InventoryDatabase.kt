@@ -1,8 +1,8 @@
 import Databases.InspectionData
 import Databases.ProductDao
 import Databases.ProductData
-import Databases.Settings
-import Databases.SettingsDao
+import com.LingTH.fridge.Setting.Settings
+import com.LingTH.fridge.Setting.SettingsDao
 import android.content.Context
 import androidx.room.Database
 import androidx.room.Room

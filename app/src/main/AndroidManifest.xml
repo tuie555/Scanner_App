@@ -35,10 +35,10 @@
         </activity>
 
         <!-- Other Activities -->
-        <activity android:name="com.LingTH.fridge.barcode.Scanner" />
+        <activity android:name="com.LingTH.fridge.Barcode.Scanner" />
 
-        <activity android:name="com.LingTH.fridge.barcode.Add" />
-        <activity android:name="com.LingTH.fridge.barcode.Edit" />
+        <activity android:name="com.LingTH.fridge.Barcode.Add" />
+        <activity android:name="com.LingTH.fridge.Barcode.Edit" />
 
         <receiver
             android:enabled="true"

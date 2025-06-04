@@ -1,6 +1,6 @@
 @file:OptIn(ExperimentalMaterial3Api::class)
 
-package com.LingTH.fridge.barcode;
+package com.LingTH.fridge.Barcode;
 
 import Databases.AddViewModelFactory
 import android.app.Activity
@@ -58,7 +58,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -72,94 +71,128 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import coil.compose.rememberAsyncImagePainter
 import Databases.Addviewmodel
-import Databases.ProductData
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.IconButton
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.ui.text.font.FontWeight
-import androidx.navigation.NavHostController
-import androidx.navigation.compose.rememberNavController
-import coil.request.CachePolicy
-import coil.request.ImageRequest
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.unit.Dp
 import com.LingTH.fridge.MainActivity2
-import com.LingTH.fridge.setting.components.OptionSelector
+import com.LingTH.fridge.Setting.components.OptionSelector
 import com.LingTH.fridge.ui.theme.getAdaptiveHorizontalPadding
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.Date
 import java.util.Locale
 
-class Edit : ComponentActivity() {
+class Add : ComponentActivity() {
 
     private lateinit var viewModel: Addviewmodel
 
     override fun onCreate(savedInstanceState: Bundle?) {
-
         super.onCreate(savedInstanceState)
-        val product = intent.getSerializableExtra("productData") as? ProductData
-        val db = InventoryDatabase.getDatabase(applicationContext)
+
+        // Initialize database and ViewModel before setContent
+        val barcode = intent?.getStringExtra("barcode") ?: "No barcode found"
+        val db = InventoryDatabase.getDatabase(applicationContext) // ✅ Use singleton getter
         val productDao = db.productDao()
+
         val factory = AddViewModelFactory(productDao)
 
-        viewModel = ViewModelProvider(this, factory)[Addviewmodel::class.java]
+        lifecycleScope.launch {
+            val list = productDao.getAllProducts().first()
+            Log.d("DB", "First load: ${list.size} items")
+        }
+
+        viewModel = ViewModelProvider(this, factory)[Addviewmodel::class.java] // ✅ Safe initialization
 
         setContent {
-            val navController = rememberNavController()
-            ProductScreen1(product = product, viewModel = viewModel, navController = navController)
+            ProductScreen(barcode = barcode, viewModel = viewModel)
         }
     }
 }
 
 
 
-
 @Composable
-fun ProductScreen1(product: ProductData?, viewModel: Addviewmodel,navController: NavHostController) {
-    if (product == null) {
-        Text("No product found")
-        return
-    }
+fun ProductScreen(barcode: String, viewModel: Addviewmodel) {
+    Log.d("ProductScreen", "Scanned barcode: $barcode")
 
     val context = LocalContext.current
-    var name by remember { mutableStateOf(product.product_name) }
-    var categories by remember { mutableStateOf(product.categories) }
-    var imageUrl by remember { mutableStateOf(product.image_url) }
-    var expirationDate by remember { mutableStateOf(product.expiration_date?.toDateStringEdit() ?: "") }
-    var addDay by remember { mutableStateOf(product.add_day?.toDateStringEdit() ?: "") }
-    var notes by remember { mutableStateOf(product.notes ?: "") }
+
+    var name by remember { mutableStateOf("") }
+    var categories by remember { mutableStateOf("") }
+    var imageUrl by remember { mutableStateOf("") }
+    var expirationDate by remember { mutableStateOf<String?>(null) }
+    var addDay by remember { mutableStateOf<String?>(null) }
+    var notes by remember { mutableStateOf("") }
+
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var isLoading by remember { mutableStateOf(true) }
     var newImageUri by remember { mutableStateOf<Uri?>(null) }
 
     // Removed LocalConfiguration and related variables for padding
 
-    CenterAlignedTopAppBarExampleEdit( // This is the Scaffold
-        id = product.id,
-        barcode = product.barcode,
+    LaunchedEffect(barcode) {
+        isLoading = true
+        errorMessage = ""
+        try {
+            val product = getProductData(barcode)
+            Log.d("ProductScreen", "passsss")
+            product?.let {
+                name = it.product_name
+                categories = it.categories
+                imageUrl = it.image_url
+                expirationDate = it.expiration_date?.toDateString() ?: ""
+                addDay = it.add_day?.toDateString() ?: ""
+                notes = it.notes ?: ""
+
+                Log.d("Databases.ProductData", "Name: $name, Categories: $categories, Image URL: $imageUrl")
+            }
+                ?: run {
+                    errorMessage = "Product not found or failed to fetch."
+                }
+        } catch (e: Exception) {
+            errorMessage = "Error loading product: ${e.message}"
+            Log.e("ProductScreen", "Error loading product", e)
+        } finally {
+            isLoading = false
+        }
+    }
+
+
+    // Main UI
+    CenterAlignedTopAppBarExample( // This is the Scaffold
+        barcode = barcode,
         name = name,
         categories = categories,
         imageUrl = imageUrl,
         newImageUri = newImageUri,
-        addDay = addDay,
         expirationDate = expirationDate,
         notes = notes,
         viewModel = viewModel,
-        context = context
+        context = context,
+        onBackClick = {
+            val intent = Intent(context, MainActivity2::class.java)
+            context.startActivity(intent)
+        }
     ) { innerPadding -> // Content lambda for the Scaffold
         Column(
             modifier = Modifier
                 .padding(innerPadding) // Apply Scaffold's padding
                 .padding(horizontal = getAdaptiveHorizontalPadding()) // Use adaptive padding utility
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState()) // Make content scrollable
+            // Add .verticalScroll(rememberScrollState()) if content exceeds screen height
         ) {
             // Spacer(modifier = Modifier.height(16.dp)) // Original spacer, adjust if needed
 
-            AddPhotoButtonEdit(
+            AddPhotoButton(
                 imageUrl = imageUrl,
                 currentUri = newImageUri,
                 onImageUriChanged = { uri -> newImageUri = uri },
@@ -168,50 +201,46 @@ fun ProductScreen1(product: ProductData?, viewModel: Addviewmodel,navController:
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            EmailInputExampleEdit(
+            EmailInputExample(
                 productName1 = name,
                 onValueChange = { name = it }
             )
 
-            SettingsScreenaddEdit(
+            SettingsScreenadd(
                 categories = categories,
                 onValueChange = { newCategories -> categories = newCategories }
             )
 
-            ExpirationDateSelectorEdit(
-                selectedDate = expirationDate,
+            ExpirationDateSelector(
                 onDateChange = { expirationDate = it }
             )
 
-            DayAddEdit(
+            DayAdd(
                 selectedDay = addDay,
                 onDayChange = { addDay = it }
             )
 
-            NotesEdit(
+            Notes(
                 notes = notes,
                 onValueChange = { notes = it }
             )
 
-            DeleteProductButton(
-                productId = product.id,
-                viewModel = viewModel,
-            )
             Spacer(modifier = Modifier.height(16.dp))
+            Log.d("imon" , "have $addDay $")
+
         }
+
     }
 }
 
 
-
-
-fun Long.toDateStringEdit(): String {
+fun Long.toDateString(): String {
     val format = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
     return format.format(Date(this))
 }
 
 
-fun String.toEpochMillisEdit(): Long {
+fun String.toEpochMillis(): Long {
     return try {
         val format = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
         format.isLenient = false
@@ -222,141 +251,159 @@ fun String.toEpochMillisEdit(): Long {
     }
 }
 
-
-fun updateProductIfValidEdit(
-    id: Int,
+var isSaved = true
+fun saveProductIfValid(
     viewModel: Addviewmodel,
     barcode: String,
     name: String,
     categories: String,
     imageUrl: String,
-    addDay: String?,
     expirationDate: String?,
     notes: String,
     context: Context,
     onComplete: () -> Unit
 ) {
-    if (addDay.isNullOrEmpty() || expirationDate.isNullOrEmpty()) {
-        Toast.makeText(context, "Please select Add Day and Expiration Date", Toast.LENGTH_SHORT).show()
-        return
-    }
-
-    val addDayMillis = addDay.toEpochMillisEdit()
-    val expirationMillis = expirationDate.toEpochMillisEdit()
-
-    if (imageUrl.startsWith("content://")) {
-        try {
-            val uri = Uri.parse(imageUrl)
-            context.contentResolver.takePersistableUriPermission(
-                uri,
-                Intent.FLAG_GRANT_READ_URI_PERMISSION
-            )
-        } catch (e: Exception) {
-            e.printStackTrace()
-            Toast.makeText(context, "Failed to persist image permission", Toast.LENGTH_SHORT).show()
+    if (isSaved) {
+        if (categories.isBlank()) {
+            Toast.makeText(context, "Please select a category", Toast.LENGTH_SHORT).show()
             return
         }
-    }
 
-    if (expirationMillis < addDayMillis) {
-        Toast.makeText(context, "Expiration date cannot be before Add date", Toast.LENGTH_SHORT).show()
-        return
-    }
+        val todayDate = getTodayDate()
+        val addDayMillis = todayDate.toEpochMillis()
+        Log.d("imon", "$todayDate")
 
-    viewModel.updateProduct(
-        id = id,
-        barcode = barcode,
-        name = name,
-        categories = categories,
-        imageUrl = imageUrl,
-        add_day = addDayMillis,
-        expie_day = expirationMillis,
-        notes = notes,
-        onUpdated = {
-            Toast.makeText(context, "Product updated successfully", Toast.LENGTH_SHORT).show()
-            onComplete()
-        },
-        onError = {
-            Toast.makeText(context, "Failed to update product", Toast.LENGTH_SHORT).show()
+        if (expirationDate.isNullOrEmpty()) {
+            Toast.makeText(context, "Please select Expiration Date", Toast.LENGTH_SHORT).show()
+            return
         }
-    )
+
+        val expirationMillis = expirationDate.toEpochMillis()
+
+        if (addDayMillis == 0L || expirationMillis == 0L) {
+            Toast.makeText(context, "Invalid date format", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        if (imageUrl.startsWith("content://")) {
+            try {
+                val uri = Uri.parse(imageUrl)
+                context.contentResolver.takePersistableUriPermission(
+                    uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+            } catch (e: Exception) {
+                e.printStackTrace()
+                Toast.makeText(context, "Failed to persist image permission", Toast.LENGTH_SHORT).show()
+                return
+            }
+        }
+
+        viewModel.saveProduct(
+            barcode = barcode,
+            name = name,
+            categories = categories,
+            imageUrl = imageUrl,
+            add_day = addDayMillis,
+            expie_day = expirationMillis,
+            notes = notes,
+            onSaved = {
+                Toast.makeText(context, "Product saved successfully", Toast.LENGTH_SHORT).show()
+                onComplete()
+            }
+        )
+    }
+    isSaved = false
 }
+
+
+
 
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CenterAlignedTopAppBarExampleEdit(
-    id: Int, // ✅ เพิ่มตรงนี้
+fun CenterAlignedTopAppBarExample(
     barcode: String,
     name: String,
     categories: String,
     imageUrl: String,
     newImageUri: Uri?,
-    addDay: String,
-    expirationDate: String,
+    expirationDate: String?,
     notes: String,
     viewModel: Addviewmodel,
     context: Context,
-    content: @Composable (PaddingValues) -> Unit // Added content lambda
+    onBackClick: () -> Unit,
+    content: @Composable (PaddingValues) -> Unit
 ) {
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
     val context1 = LocalContext.current
     val activity = context1 as? Activity
-    val coroutineScope = rememberCoroutineScope()
+
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = Color.White,
-                    titleContentColor = Color.Black,
-                ),
                 title = {
-                    Text("Edit Product Information", maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(
+                        text = "Enter Product Information",
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 },
                 navigationIcon = {
-                    BackButtonEdit(onBackClick = {
-                        activity?.startActivity(Intent(activity, MainActivity2::class.java))
-                        activity?.finish()
-                    })
+                    BackButton(onBackClick)
                 },
                 actions = {
                     Text(
                         text = "Done",
                         fontSize = 18.sp,
                         modifier = Modifier.clickable {
-                            Log.d("DEBUG", "Done button clicked")
-                            coroutineScope.launch {
-                                updateProductIfValidEdit(
-                                    id = id,
-                                    viewModel = viewModel,
-                                    barcode = barcode,
-                                    name = name,
-                                    categories = categories,
-                                    imageUrl = newImageUri?.toString() ?: imageUrl,
-                                    addDay = addDay,
-                                    expirationDate = expirationDate,
-                                    notes = notes,
-                                    context = context,
-                                    onComplete = {
-                                        Log.d("NAVIGATION", "Navigating to MainActivity2")
-                                        activity?.startActivity(Intent(activity, MainActivity2::class.java))
-                                        activity?.finish()
-                                    }
-                                )
+                            val finalImageUrl = newImageUri?.toString() ?: imageUrl
+                            if (finalImageUrl.startsWith("content://")) {
+                                try {
+                                    context.contentResolver.takePersistableUriPermission(
+                                        Uri.parse(finalImageUrl),
+                                        Intent.FLAG_GRANT_READ_URI_PERMISSION
+                                    )
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+                                }
                             }
+
+                            isSaved = true
+                            saveProductIfValid(
+                                viewModel = viewModel,
+                                barcode = barcode,
+                                name = name,
+                                categories = categories,
+                                imageUrl = finalImageUrl,
+                                expirationDate = expirationDate,
+                                notes = notes,
+                                context = context,
+                                onComplete = {
+                                    Log.d("onComplete", "called")
+                                    val intent = Intent(activity, MainActivity2::class.java).apply {
+                                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                                    }
+                                    activity?.startActivity(intent)
+                                    activity?.finish()
+                                }
+                            )
                         }
                     )
                 },
                 scrollBehavior = scrollBehavior,
             )
         },
-        content = content // Use the content lambda here
+        content = content
     )
 }
 
+
+
+
 @Composable
-fun BackButtonEdit(onBackClick: () -> Unit) {
+fun BackButton(onBackClick: () -> Unit) {
     Row(
         verticalAlignment = Alignment.CenterVertically
         // Modifier.clickable {} removed
@@ -368,7 +415,6 @@ fun BackButtonEdit(onBackClick: () -> Unit) {
                 contentDescription = "Back",
                 modifier = Modifier.size(20.dp)
             )
-
             Spacer(modifier = Modifier.width(4.dp))
 
         }
@@ -376,7 +422,7 @@ fun BackButtonEdit(onBackClick: () -> Unit) {
 }
 
 @Composable
-fun AddPhotoButtonEdit(
+fun AddPhotoButton(
     imageUrl: String?, // Initial URL from server/ (the one in ProductScreen's `imageUrl` state)
     currentUri: Uri?,    // The URI of an image newly picked by the user (ProductScreen's `newImageUri` state)
     onImageUriChanged: (Uri?) -> Unit, // Callback to inform ProductScreen when a new image is picked
@@ -403,30 +449,17 @@ fun AddPhotoButtonEdit(
         when {
             currentUri != null -> { // If a new image has been picked, display it
                 Image(
-                    painter = rememberAsyncImagePainter(
-                        ImageRequest.Builder(LocalContext.current)
-                            .data(currentUri)
-                            .memoryCachePolicy(CachePolicy.DISABLED)
-                            .diskCachePolicy(CachePolicy.DISABLED)
-                            .build()
-                    ),
+                    painter = rememberAsyncImagePainter(currentUri),
                     contentDescription = "Selected product image",
                     modifier = Modifier.fillMaxSize()
                 )
             }
             imageUrl != null && imageUrl.isNotBlank() -> { // Otherwise, if an existing imageUrl exists, display it
                 Image(
-                    painter = rememberAsyncImagePainter(
-                        ImageRequest.Builder(LocalContext.current)
-                            .data(imageUrl)
-                            .memoryCachePolicy(CachePolicy.DISABLED) // force reload
-                            .diskCachePolicy(CachePolicy.DISABLED)
-                            .build()
-                    ),
+                    painter = rememberAsyncImagePainter(imageUrl),
                     contentDescription = "Product image",
                     modifier = Modifier.fillMaxSize()
                 )
-
             }
             else -> { // Placeholder if no image
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -437,13 +470,13 @@ fun AddPhotoButtonEdit(
         }
     }
 }
-// Removed ScrollContentEdit as it's no longer used directly here or is implicit by passing content lambda
+// Removed ScrollContent as it's no longer used directly here or is implicit by passing content lambda
 
 @Composable
-fun EmailInputExampleEdit(productName1: String, onValueChange: (String) -> Unit) {
+fun EmailInputExample(productName1: String, onValueChange: (String) -> Unit) {
     var isVisible by remember { mutableStateOf(false) }
 
-    EmailEdit(
+    Email(
         label = "Product Name",
         productName = productName1, // Directly use the passed-in value
         onProductNameChange = { onValueChange(it) }, // Pass changes back
@@ -454,7 +487,7 @@ fun EmailInputExampleEdit(productName1: String, onValueChange: (String) -> Unit)
 
 
 @Composable
-fun EmailEdit(label: String, productName: String, onProductNameChange: (String) -> Unit, isVisible: Boolean, onToggleVisible: () -> Unit) {
+fun Email(label: String, productName: String, onProductNameChange: (String) -> Unit, isVisible: Boolean, onToggleVisible: () -> Unit) {
     val focusRequester = remember { FocusRequester() }
 
     LaunchedEffect(isVisible) {
@@ -498,7 +531,7 @@ fun EmailEdit(label: String, productName: String, onProductNameChange: (String) 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ExpirationDateSelectorEdit(
+fun ExpirationDateSelector(
     selectedDate: String? = null,
     onDateChange: (String) -> Unit
 ) {
@@ -506,20 +539,14 @@ fun ExpirationDateSelectorEdit(
     var showDatePickerDialog by remember { mutableStateOf(false) }
 
     val datePickerState = rememberDatePickerState(
-        initialSelectedDateMillis = selectedDate?.let { convertDateToMillisEdit(it) } ?: currentDateMillis
+        initialSelectedDateMillis = selectedDate?.let { convertDateToMillis(it) } ?: currentDateMillis
     )
 
-    // Trigger `onDateChange` when the date changes (typically after dialog confirmation)
-    LaunchedEffect(datePickerState.selectedDateMillis) {
-        // This can be used if date needs to update live, but for dialog,
-        // it's better to update on confirm.
-    }
-
     Column(modifier = Modifier.padding(0.dp)) {
-        inputNotFileEdit(
+        inputNotFile(
             label = "Expiration Date",
-            value = datePickerState.selectedDateMillis?.let { convertMillisToDateEdit(it) } ?: "Select Date",
-            onToggleVisible = { showDatePickerDialog = true } // Open dialog on click
+            value = datePickerState.selectedDateMillis?.let { convertMillisToDate(it) } ?: "Select Date",
+            onToggleVisible = { showDatePickerDialog = true }
         )
 
         if (showDatePickerDialog) {
@@ -528,14 +555,23 @@ fun ExpirationDateSelectorEdit(
                 confirmButton = {
                     TextButton(onClick = {
                         showDatePickerDialog = false
-                        // Update the date when "OK" is clicked
-                        datePickerState.selectedDateMillis?.let { millis ->
-                            onDateChange(convertMillisToDateEdit(millis))
+                        val millis = datePickerState.selectedDateMillis
+                        if (millis != null) {
+                            val date = convertMillisToDate(millis)
+                            Log.d("imon", "Selected date in millis: $millis")
+                            Log.d("imon", "Converted date: $date")
+                            onDateChange(date)
+                        } else {
+                            Log.e("imon", "No date selected in DatePicker")
                         }
-                    }) { Text("OK") }
+                    }) {
+                        Text("OK")
+                    }
                 },
                 dismissButton = {
-                    TextButton(onClick = { showDatePickerDialog = false }) { Text("Cancel") }
+                    TextButton(onClick = { showDatePickerDialog = false }) {
+                        Text("Cancel")
+                    }
                 }
             ) {
                 DatePicker(state = datePickerState, showModeToggle = false)
@@ -544,46 +580,63 @@ fun ExpirationDateSelectorEdit(
     }
 }
 
-fun convertDateToMillisEdit(date: String): Long {
+fun convertDateToMillis(date: String): Long? {
     return try {
-        val formatter = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-        formatter.parse(date)?.time ?: System.currentTimeMillis()
+        val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy", Locale.getDefault())
+        val localDate = LocalDate.parse(date, formatter)
+        localDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
     } catch (e: Exception) {
-        System.currentTimeMillis()
+        null
     }
 }
 
-// Removed DatePickerCardEdit as it's no longer used
-
-fun convertMillisToDateEdit(millis: Long): String {
-    if (millis == 0L) return "No date selected"
-
-    val formatter = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-    return formatter.format(Date(millis))
+fun convertMillisToDate(millis: Long): String {
+    return try {
+        val localDate = Instant.ofEpochMilli(millis)
+            .atZone(ZoneId.systemDefault())
+            .toLocalDate()
+        localDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy", Locale.getDefault()))
+    } catch (e: Exception) {
+        "Invalid date"
+    }
 }
 
+
+
+
+
+
 @Composable
-fun DayAddEdit(
+fun DayAdd(
     selectedDay: String? = null,
     onDayChange: (String) -> Unit
 ) {
-    val today = getTodayDateEdit()
+    val today = getTodayDate()
 
-    // Initialize with `selectedDay` or fallback to today
     var day by remember { mutableStateOf(selectedDay ?: today) }
 
-    Column(modifier = Modifier.padding(1.dp)) {
-        inputNotFileEdit(
-            label = "Add Day",
-            value = day
-        ) {
-            onDayChange(day) // Use the current value, or trigger date picker externally
+    LaunchedEffect(Unit) {
+        if (selectedDay == null) {
+            onDayChange(today)
         }
+    }
+
+    Column(modifier = Modifier.padding(1.dp)) {
+        inputNotFile(
+            label = "Add Day",
+            value = day,
+            onToggleVisible = {
+                // Optional: add DatePicker if needed
+            }
+        )
     }
 }
 
+
+
+
 @Composable
-fun inputNotFileEdit(label: String, value: String, onToggleVisible: () -> Unit) {
+fun inputNotFile(label: String, value: String, onToggleVisible: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -611,7 +664,7 @@ fun inputNotFileEdit(label: String, value: String, onToggleVisible: () -> Unit) 
                 horizontalArrangement = Arrangement.End
             ) {
                 Text(
-                    text = value.ifEmpty { "Select Date" },
+                    text = value.ifEmpty { "Select Category" },
                     fontSize = 14.sp,
                     color = Color.DarkGray
                 )
@@ -628,13 +681,13 @@ fun inputNotFileEdit(label: String, value: String, onToggleVisible: () -> Unit) 
 }
 
 @Composable
-fun NotesEdit(
+fun Notes(
     notes: String,
     onValueChange: (String) -> Unit
 ) {
     var isVisible by remember { mutableStateOf(false) }
 
-    EmailEdit(
+    Email(
         label = "Notes:",
         productName = notes,
         onProductNameChange = onValueChange,
@@ -644,13 +697,13 @@ fun NotesEdit(
 }
 
 
-fun getTodayDateEdit(): String {
+fun getTodayDate(): String {
     val formatter = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
     return formatter.format(Date())
 }
 
 @Composable
-fun SettingsScreenaddEdit(
+fun SettingsScreenadd(
     categories: String,
     onValueChange: (String) -> Unit
 ) {
@@ -765,35 +818,23 @@ fun SettingsScreenaddEdit(
     }
 }
 
-@Composable
-fun DeleteProductButton(
-    productId: Int,
-    viewModel: Addviewmodel,
-    modifier: Modifier = Modifier
-) {
-    val context = LocalContext.current
 
-    OutlinedButton(
-        onClick = {
-            viewModel.deleteProductById(productId)
-            Toast.makeText(context, "ลบสินค้าสำเร็จ", Toast.LENGTH_SHORT).show()
-            val intent = Intent(context, MainActivity2::class.java)
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
-            context.startActivity(intent)
 
-        },
-        modifier = modifier
-            .fillMaxWidth()
-            .height(50.dp),
-        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Red),
-        border = BorderStroke(1.dp, Color.Red)
-    ) {
-        Text("ลบสินค้า", fontWeight = FontWeight.Bold)
-    }
-}
 
-enum class VisibleSelectorEdit {
+
+
+enum class VisibleSelector {
     NONE,
     ALERT_BEFORE_EXPIRED
 
 }
+@Composable
+fun getAdaptiveHorizontalPadding(): Dp {
+    val configuration = LocalConfiguration.current
+    return when {
+        configuration.screenWidthDp < 360 -> 8.dp
+        configuration.screenWidthDp < 600 -> 16.dp
+        else -> 32.dp
+    }
+}
+

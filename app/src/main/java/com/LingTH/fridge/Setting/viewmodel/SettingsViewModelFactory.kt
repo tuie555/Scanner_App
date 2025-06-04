@@ -1,9 +1,8 @@
-package ViewModels
+package com.LingTH.fridge.Setting.viewmodel
 
+import com.LingTH.fridge.Setting.SettingsDao
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import Databases.SettingsDao
-import viewmodel.SettingsViewModel
 
 class SettingsViewModelFactory(
     private val settingsDao: SettingsDao

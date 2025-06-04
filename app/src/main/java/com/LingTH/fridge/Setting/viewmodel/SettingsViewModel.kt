@@ -1,9 +1,9 @@
-package viewmodel
+package com.LingTH.fridge.Setting.viewmodel
 
+import com.LingTH.fridge.Setting.Settings
+import com.LingTH.fridge.Setting.SettingsDao
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import Databases.SettingsDao
-import Databases.Settings
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
