@@ -45,12 +45,10 @@ enum class VisibleSelector {
 // SandFscreen.kt
 @Composable
 fun SandFscreen(
+    filterViewModel: FilterViewModel,
     navController: NavHostController,
-    dao: ProductDao,
-    filterViewModel: FilterViewModel
 ) {
 
-    val context = LocalContext.current
     var visibleSelector by remember { mutableStateOf(VisibleSelector.NONE) }
     val selectedCategory by filterViewModel.selectedCategory.collectAsState()
     val selectedExpiredIn by filterViewModel.selectedExpiredIn.collectAsState()
@@ -59,8 +57,6 @@ fun SandFscreen(
     val selectedExpirationDate by filterViewModel.selectedExpirationDate.collectAsState()
     val selectedSortByName by filterViewModel.selectedSortByName.collectAsState()
     val selectedSortByDate by filterViewModel.selectedSortByDate.collectAsState()
-
-
     val selectCategory = selectedCategory.joinToString(", ")
     val selectExpiredIn = selectedExpiredIn.joinToString(", ")
     val selectAdded = selectedAdded.joinToString(", ")
@@ -136,14 +132,10 @@ fun SandFscreen(
     val scrollState = rememberScrollState()
 
     BackHandler {
-        val intent = Intent(context, MainActivity2::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-        }
-        context.startActivity(intent)
 
-        // Optional: ปิด Compose Activity ถ้าคุณไม่อยากให้กด back แล้วกลับมาอีก
-        if (context is Activity) {
-            context.finish()
+        navController.navigate("productList"){
+            popUpTo("productList") { inclusive = true }
+            launchSingleTop = true
         }
     }
     Column(

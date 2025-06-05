@@ -19,17 +19,10 @@ import com.LingTH.fridge.Setting.viewmodel.SettingsViewModel
 fun NavigationGraph(
     navController: NavHostController,
     paddingValues: PaddingValues,
-    searchText: String,
     filterViewModel: FilterViewModel
 ) {
     val context = LocalContext.current
     val database = InventoryDatabase.getDatabase(context)
-    val productDao = database.productDao()
-
-    // สร้าง ViewModel ที่นี่ครั้งเดียว ใช้ factory ที่รับ dao
-    val filterViewModel: FilterViewModel = viewModel(
-        factory = FilterViewModelFactory(productDao)
-    )
 
     NavHost(navController = navController, startDestination = "productList") {
         composable("productList") {
@@ -52,11 +45,9 @@ fun NavigationGraph(
         }
 
         composable("Sorting and Filter") {
-            // ส่ง filterViewModel ที่สร้างแล้วเข้าไป ไม่ต้องสร้างใหม่
             SandFscreen(
-                navController = navController,
-                dao = productDao,
-                filterViewModel = filterViewModel
+                filterViewModel = filterViewModel,
+                navController = navController
             )
         }
     }

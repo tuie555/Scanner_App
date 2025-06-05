@@ -86,6 +86,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import coil.compose.rememberAsyncImagePainter
 import com.LingTH.fridge.Notification.BootReceiver
@@ -140,9 +141,11 @@ class MainActivity2 : ComponentActivity() {
 
         setContent {
             val navController = rememberNavController()
-            var isSettingsScreen by remember { mutableStateOf(false) }
-            var searchText by remember { mutableStateOf("") }
-            var isFilterScreen by remember { mutableStateOf(false) }
+            val navBackStackEntry by navController.currentBackStackEntryAsState()
+            val isSettingsScreen = navBackStackEntry?.destination?.route == "settings"
+            val isFilterScreen = navBackStackEntry?.destination?.route == "Sorting and Filter"
+
+            var searchText by remember { mutableStateOf("") } // This was from the previous state, let's keep it for now if FilterViewModel not updated yet
             val context = LocalContext.current
             val database = InventoryDatabase.getDatabase(context)
             val productDao = database.productDao()
@@ -163,42 +166,47 @@ class MainActivity2 : ComponentActivity() {
                     )
                     notificationManager.createNotificationChannel(channel)
                 }
-
-
             }
-            LaunchedEffect(navController) {
-                navController.currentBackStackEntryFlow.collect { backStackEntry ->
-                    isSettingsScreen = backStackEntry.destination.route == "settings"
-                }
-            }
+
             Scaffold(
                 topBar = {
-
-
                     if (!isSettingsScreen) {
-
                         TopBar(
                             searchText = searchText,
                             onSearchTextChange = { searchText = it },
                             isFilterScreen = isFilterScreen,
-                            onFilterChanged = { isFilterScreen = it },
-                            navController = navController
+                            onFilterChanged = { isFiltering ->
+                                if (isFiltering) {
+                                    navController.navigate("Sorting and Filter") {
+                                        popUpTo(navController.graph.startDestinationId) { inclusive = false }
+                                        launchSingleTop = true
+                                    }
+                                } else {
+                                    // Assuming navigating back from filter screen goes to productList or similar
+                                    navController.popBackStack()
+                                }
+                            }
                         )
-
                     } else {
                         null
                     }
                 },
                 bottomBar = {
                     BottomBar(navController, isSettingsScreen) { isSettings ->
-                        isSettingsScreen = isSettings
+                        if (isSettings) {
+                            navController.navigate("settings") {
+                                popUpTo(navController.graph.startDestinationId) { inclusive = false }
+                                launchSingleTop = true
+                            }
+                        } else {
+                            navController.popBackStack()
+                        }
                     }
                 }
             ) { paddingValues ->
                 NavigationGraph(
                     navController = navController,
                     paddingValues = paddingValues,
-                    searchText = searchText,
                     filterViewModel = filterViewModel
                 )
             }
@@ -209,43 +217,8 @@ class MainActivity2 : ComponentActivity() {
 
 
 
-@SuppressLint("ConfigurationScreenWidthHeight")
-@Composable
-fun ProductListScreen(
-    navController: NavHostController,
-    paddingValues: PaddingValues,
-    viewModel: FilterViewModel
-) {
-    val filteredProducts by viewModel.filteredProducts.collectAsState()
 
-    val configuration = LocalConfiguration.current
-    val screenWidth = configuration.screenWidthDp.dp
-    val columnCount = when {
-        screenWidth < 600.dp -> 2
-        screenWidth < 900.dp -> 3
-        else -> 4
-    }
 
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(columnCount),
-        modifier = Modifier
-            .padding(paddingValues)
-            .padding(horizontal = 12.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        items(filteredProducts) { product ->
-            ProductCard(
-                product = product,
-                onClick = {
-                    val intent = Intent(navController.context, Edit::class.java)
-                    intent.putExtra("productData", product)
-                    navController.context.startActivity(intent)
-                }
-            )
-        }
-    }
-}
 
 
 
@@ -256,11 +229,8 @@ fun TopBar(
     onSearchTextChange: (String) -> Unit,
     isFilterScreen: Boolean,
     onFilterChanged: (Boolean) -> Unit,
-    navController: NavHostController
 ) {
     val insets = WindowInsets.statusBars.asPaddingValues()
-
-
 
     TopAppBar(
         backgroundColor = Color.White,
@@ -290,12 +260,10 @@ fun TopBar(
                                 color = Color(0xFFF0F0F0),
                                 shape = RoundedCornerShape(24.dp)
                             )
-                            .padding(horizontal = 16.dp, vertical = 0.dp),
+                            .padding(horizontal = 16.dp),
                         contentAlignment = Alignment.CenterStart
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
                                 imageVector = Icons.Default.Search,
                                 contentDescription = null,
@@ -336,15 +304,15 @@ fun TopBar(
             }
         },
         actions = {
-            IconButton(onClick = {
-                if (isFilterScreen) {
-                    navController.popBackStack()
-                    onFilterChanged(false)
-                } else {
-                    navController.navigate("Sorting and Filter")
-                    onFilterChanged(true)
+            IconButton(
+                onClick = {
+                    if (isFilterScreen) {
+                        onFilterChanged(false) // ปิดหน้า Filter
+                    } else {
+                        onFilterChanged(true)  // เปิดหน้า Filter
+                    }
                 }
-            }) {
+            ) {
                 Icon(
                     imageVector = Icons.Default.FilterAlt,
                     contentDescription = "Filter",
@@ -354,6 +322,8 @@ fun TopBar(
         }
     )
 }
+
+
 
 
 
@@ -441,6 +411,155 @@ fun ProductCard(
 
 
 
+
+
+@SuppressLint("ConfigurationScreenWidthHeight")
+@Composable
+fun BottomBar(
+    navController: NavHostController,
+    isSettingsScreen: Boolean,
+    onSettingsChanged: (Boolean) -> Unit
+) {
+    val screenWidth = LocalConfiguration.current.screenWidthDp.dp
+    val iconSize = (screenWidth * 0.08f).coerceIn(40.dp, 50.dp)
+    val context = LocalContext.current
+
+    Box {
+        BottomAppBar(
+            backgroundColor = Color.White,
+            elevation = 0.dp,
+            contentPadding = PaddingValues(horizontal = 20.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(70.dp)
+                .drawBehind {
+                    drawLine(
+                        color = Color.Black,
+                        start = Offset(0f, 0f),
+                        end = Offset(size.width, 0f),
+                        strokeWidth = 2.dp.toPx()
+                    )
+                }
+        ) {
+            // ปุ่ม Product List
+            IconButton(
+                onClick = {
+                    if (isSettingsScreen) {
+                        navController.popBackStack() // กลับหน้าก่อนหน้า (productList)
+                        onSettingsChanged(false)
+                    } else {
+                        navController.navigate("productList") {
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
+                },
+                modifier = Modifier.size(50.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.List,
+                    contentDescription = "Menu",
+                    tint = if (!isSettingsScreen) Color.Black else Color(0xFF6B7280),
+                    modifier = Modifier.size(iconSize)
+                )
+            }
+
+            Spacer(modifier = Modifier.weight(1f)) // เว้นที่ไว้กลางเพื่อ FAB
+
+            Spacer(modifier = Modifier.weight(1f)) // เว้นที่ไว้กลางเพื่อ FAB
+
+            // ปุ่ม Settings
+            IconButton(
+                onClick = {
+                    if (!isSettingsScreen) {
+                        onSettingsChanged(true)
+                        navController.navigate("settings")
+                    } else {
+                        onSettingsChanged(false)
+                        navController.popBackStack()
+                    }
+                },
+                modifier = Modifier.size(50.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Settings,
+                    contentDescription = "Settings",
+                    tint = if (isSettingsScreen) Color.Black else Color(0xFF6B7280),
+                    modifier = Modifier.size(iconSize)
+                )
+            }
+        }
+
+        // ปุ่มกลาง FAB
+        CentralFab(
+            onClick = {
+                context.startActivity(Intent(context, Scanner::class.java))
+            }
+        )
+    }
+}
+
+
+@Composable
+fun CentralFab(onClick: () -> Unit) {
+    val blue400 = Color(0xFF6B82A8)
+    Box(
+        modifier = Modifier
+            .fillMaxWidth() // Ensure the Box takes full width to center the FAB
+            .height(70.dp), // Match BottomAppBar height for alignment
+        contentAlignment = Alignment.TopCenter // Align FAB to the TopCenter of this Box
+    ) {
+        Box(
+            modifier = Modifier
+                // .align(Alignment.TopCenter) // This align is for the parent Box
+                .offset(y = (-40).dp)
+                .shadow(30.dp, RoundedCornerShape(30.dp), clip = false)
+                .clip(RoundedCornerShape(30.dp))
+                .background(blue400)
+                .clickable { onClick() }
+                .size(width = 130.dp, height = 70.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(50.dp)
+                    .border(width = 4.dp, color = Color.Black, shape = CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Add",
+                    tint = Color.Black,
+                    modifier = Modifier.size(45.dp)
+                )
+            }
+        }
+    }
+}
+
+
+fun scheduleRepeatingAlarm(context: Context) {
+    val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+    val intent = Intent(context, BootReceiver::class.java)
+    val pendingIntent = PendingIntent.getBroadcast(
+        context,
+        0,
+        intent,
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+    )
+
+    val intervalMillis = 10_000L // 10 วินาที
+
+    val startTime = System.currentTimeMillis() + 5_000L // เริ่มหลังจากนี้ 5 วิ
+
+    // 🔁 ตั้ง alarm แบบทำซ้ำ (ในบางรุ่นอาจไม่แม่น แต่ใช้ได้ดีพอสำหรับกรณีทั่วไป)
+    alarmManager.setRepeating(
+        AlarmManager.RTC_WAKEUP,
+        startTime,
+        intervalMillis,
+        pendingIntent
+    )
+}
 @Composable
 fun SmartImageLoader(
     imagePath: String,
@@ -471,146 +590,40 @@ fun SmartImageLoader(
         )
     }
 }
-
-
 @SuppressLint("ConfigurationScreenWidthHeight")
 @Composable
-fun BottomBar(
+fun ProductListScreen(
     navController: NavHostController,
-    isSettingsScreen: Boolean,
-    onSettingsChanged: (Boolean) -> Unit
+    paddingValues: PaddingValues,
+    viewModel: FilterViewModel
 ) {
-    val blue400 = Color(0xFF6B82A8)
-    val screenWidth = LocalConfiguration.current.screenWidthDp.dp
-    val iconSize = (screenWidth * 0.08f).coerceIn(40.dp, 50.dp)
-    val context = LocalContext.current
-    var isClicked by remember { mutableStateOf(false) }
+    val filteredProducts by viewModel.filteredProducts.collectAsState()
 
-    Box {
-        // Bottom App Bar
-        BottomAppBar(
-            backgroundColor = Color.White,
-            elevation = 0.dp, // ปิดเงาเพื่อให้เส้นชัด
-            contentPadding = PaddingValues(horizontal = 20.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(70.dp)
-                .drawBehind {
-                    // วาดเส้นขอบบน
-                    drawLine(
-                        color = Color.Black,
-                        start = Offset(0f, 0f),
-                        end = Offset(size.width, 0f),
-                        strokeWidth = 2.dp.toPx() // ความหนาของเส้น
-                    )
-                }
-        ) {
-            IconButton(
+    val configuration = LocalConfiguration.current
+    val screenWidth = configuration.screenWidthDp.dp
+    val columnCount = when {
+        screenWidth < 600.dp -> 2
+        screenWidth < 900.dp -> 3
+        else -> 4
+    }
+
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(columnCount),
+        modifier = Modifier
+            .padding(paddingValues)
+            .padding(horizontal = 12.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        items(filteredProducts) { product ->
+            ProductCard(
+                product = product,
                 onClick = {
-                    navController.navigate("productList") {
-                        popUpTo(navController.graph.startDestinationId) { inclusive = false }
-                        launchSingleTop = true
-                    }
-                },
-                modifier = Modifier.size(50.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.List,
-                    contentDescription = "Menu",
-                    tint = Color.Black,
-                    modifier = Modifier.size(iconSize)
-                )
-            }
-
-            Spacer(modifier = Modifier.weight(1f))
-            Spacer(modifier = Modifier.weight(1f))
-
-            IconButton(
-                onClick = {
-                    if (isSettingsScreen) {
-                        navController.popBackStack()
-                        onSettingsChanged(false)
-                    } else {
-                        navController.navigate("settings")
-                        onSettingsChanged(true)
-                    }
-                    isClicked = !isClicked
-                },
-                modifier = Modifier.size(50.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Settings,
-                    contentDescription = "Settings",
-                    tint = if (isClicked) Color.Black else Color(0xFF6B7280),
-                    modifier = Modifier.size(iconSize)
-                )
-            }
-        }
-
-
-        // FAB Style Button - Lifting + Animation
-        Box(
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .offset(y = (-40).dp)
-                .shadow(30.dp, RoundedCornerShape(30.dp), clip = false)
-                .clip(RoundedCornerShape(30.dp))
-                .background(blue400)
-                .clickable {
-                    context.startActivity(Intent(context, Scanner::class.java))
+                    val intent = Intent(navController.context, Edit::class.java)
+                    intent.putExtra("productData", product)
+                    navController.context.startActivity(intent)
                 }
-                .size(width = 130.dp, height = 70.dp), // ปุ่มรูปเม็ดยา
-            contentAlignment = Alignment.Center
-        ) {
-            // วงกลมโปร่งกลาง + ขอบดำ
-            Box(
-                modifier = Modifier
-                    .size(50.dp)
-                    .border(width = 4.dp, color = Color.Black, shape = CircleShape), // ขอบดำ หนา 4dp
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Add",
-                    tint = Color.Black,
-                    modifier = Modifier.size(45.dp)
-                )
-            }
+            )
         }
-
     }
 }
-
-
-
-
-fun scheduleRepeatingAlarm(context: Context) {
-    val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-    val intent = Intent(context, BootReceiver::class.java)
-    val pendingIntent = PendingIntent.getBroadcast(
-        context,
-        0,
-        intent,
-        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-    )
-
-    val intervalMillis = 10_000L // 10 วินาที
-
-    val startTime = System.currentTimeMillis() + 5_000L // เริ่มหลังจากนี้ 5 วิ
-
-    // 🔁 ตั้ง alarm แบบทำซ้ำ (ในบางรุ่นอาจไม่แม่น แต่ใช้ได้ดีพอสำหรับกรณีทั่วไป)
-    alarmManager.setRepeating(
-        AlarmManager.RTC_WAKEUP,
-        startTime,
-        intervalMillis,
-        pendingIntent
-    )
-}
-
-
-
-
-
-
-
-

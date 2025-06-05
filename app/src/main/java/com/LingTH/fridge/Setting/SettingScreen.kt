@@ -50,14 +50,10 @@ fun SettingsScreen(
     val scrollState = rememberScrollState()
     val settingsState by viewModel.settings.collectAsState()
     BackHandler {
-        val intent = Intent(context, MainActivity2::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-        }
-        context.startActivity(intent)
 
-        // Optional: ปิด Compose Activity ถ้าคุณไม่อยากให้กด back แล้วกลับมาอีก
-        if (context is Activity) {
-            context.finish()
+        navController.navigate("productList"){
+            popUpTo("productList") { inclusive = true }
+            launchSingleTop = true
         }
     }
     // โหลดค่าจาก Database ครั้งแรก
