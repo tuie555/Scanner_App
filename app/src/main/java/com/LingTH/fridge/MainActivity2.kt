@@ -58,7 +58,9 @@ import androidx.compose.material.TopAppBar
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Camera
 import androidx.compose.material.icons.filled.FilterAlt
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.Composable
@@ -89,6 +91,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import coil.compose.rememberAsyncImagePainter
+import com.LingTH.fridge.Barcode.Add
 import com.LingTH.fridge.Notification.BootReceiver
 import com.LingTH.fridge.Barcode.Edit
 import com.LingTH.fridge.Barcode.Scanner
@@ -496,6 +499,26 @@ fun BottomBar(
                 context.startActivity(Intent(context, Scanner::class.java))
             }
         )
+
+
+        IconButton(
+            onClick = {
+                context.startActivity(Intent(context, Add::class.java))
+                      },
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .offset(x = (-12).dp, y = (-70).dp) // ขยับขึ้น-ขวา
+                .size(50.dp)
+                .background(Color.White, shape = CircleShape)
+                .border(1.dp, Color.LightGray, shape = CircleShape)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = "Add manually",
+                tint = Color.Black,
+                modifier = Modifier.size(iconSize)
+            )
+        }
     }
 }
 
@@ -527,7 +550,7 @@ fun CentralFab(onClick: () -> Unit) {
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = Icons.Default.Add,
+                    imageVector = Icons.Default.Camera,
                     contentDescription = "Add",
                     tint = Color.Black,
                     modifier = Modifier.size(45.dp)
