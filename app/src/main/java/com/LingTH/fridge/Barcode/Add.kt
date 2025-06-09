@@ -75,11 +75,21 @@ import androidx.lifecycle.lifecycleScope
 import coil.compose.rememberAsyncImagePainter
 import Databases.Addviewmodel
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.material.icons.filled.Forward10
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Replay10
 import androidx.compose.material3.IconButton
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.media3.common.MediaItem
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.ui.PlayerView
+import androidx.navigation.NavController
 import com.LingTH.fridge.MainActivity2
-import com.LingTH.fridge.Setting.components.OptionSelector
+import com.LingTH.fridge.sortandfilter.Setting.components.OptionSelector
 import com.LingTH.fridge.ui.theme.getAdaptiveHorizontalPadding
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -139,6 +149,7 @@ fun ProductScreen(barcode: String, viewModel: Addviewmodel) {
 
     // Removed LocalConfiguration and related variables for padding
 
+
     LaunchedEffect(barcode) {
         isLoading = true
         errorMessage = ""
@@ -165,7 +176,6 @@ fun ProductScreen(barcode: String, viewModel: Addviewmodel) {
             isLoading = false
         }
     }
-
 
     // Main UI
     CenterAlignedTopAppBarExample( // This is the Scaffold
@@ -837,4 +847,5 @@ fun getAdaptiveHorizontalPadding(): Dp {
         else -> 32.dp
     }
 }
+
 

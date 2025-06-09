@@ -11,13 +11,16 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.widget.FrameLayout
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.OptIn
 import androidx.appcompat.app.AlertDialog
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -28,6 +31,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
@@ -48,6 +52,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.BottomAppBar
+import androidx.compose.material.Button
 import androidx.compose.material.Card
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
@@ -58,12 +63,19 @@ import androidx.compose.material.TopAppBar
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Camera
 import androidx.compose.material.icons.filled.FilterAlt
+import androidx.compose.material.icons.filled.Forward10
+import androidx.compose.material.icons.filled.Help
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Replay10
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -76,7 +88,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
+
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -85,8 +97,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.media3.common.MediaItem
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.ui.PlayerView
+import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
@@ -94,10 +111,19 @@ import coil.compose.rememberAsyncImagePainter
 import com.LingTH.fridge.Barcode.Add
 import com.LingTH.fridge.Notification.BootReceiver
 import com.LingTH.fridge.Barcode.Edit
-import com.LingTH.fridge.Barcode.Scanner
+
 import com.LingTH.fridge.sortandfilter.FilterViewModel
 import com.LingTH.fridge.sortandfilter.FilterViewModelFactory
+import com.LingTH.fridge.Barcode.Scanner
+import androidx.compose.ui.graphics.Color  // ✅ Use this for Jetpack Compose
+import androidx.compose.material.ButtonDefaults
+import androidx.media3.common.util.UnstableApi
+import androidx.compose.material.Button
 
+import androidx.compose.material.Text
+
+
+import androidx.compose.ui.unit.dp
 
 class MainActivity2 : ComponentActivity() {
     private lateinit var requestPermissionLauncher: ActivityResultLauncher<String>
@@ -519,6 +545,25 @@ fun BottomBar(
                 modifier = Modifier.size(iconSize)
             )
         }
+        IconButton(
+            onClick = {
+                navController.navigate("tutorial")
+            },
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .offset(x = 12.dp, y = (-70).dp)
+                .size(50.dp)
+                .background(Color(0xFF6B7280), shape = CircleShape)
+                .border(2.dp, Color.White, shape = CircleShape)
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.help),
+                contentDescription = "Tutorial",
+                tint = Color.White,
+                modifier = Modifier.size(iconSize)
+            )
+        }
+
     }
 }
 
@@ -650,3 +695,137 @@ fun ProductListScreen(
         }
     }
 }
+
+@OptIn(UnstableApi::class)
+@Composable
+fun TutorialVideoScreen(
+    navController: NavController,
+    videoUri: Uri
+) {
+    val context = LocalContext.current
+
+    // ExoPlayer setup
+    val exoPlayer = remember {
+        ExoPlayer.Builder(context).build().apply {
+            setMediaItem(MediaItem.fromUri(videoUri))
+            prepare()
+            playWhenReady = true
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            exoPlayer.release()
+        }
+    }
+
+    // Main layout
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF1F1F1F)) // Soft dark background
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(top = 16.dp)
+        ) {
+            // Back button
+            IconButton(
+                onClick = { navController.popBackStack() },
+                modifier = Modifier
+                    .padding(start = 16.dp)
+                    .size(40.dp)
+                    .background(Color.White.copy(alpha = 0.1f), shape = CircleShape)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ArrowBack,
+                    contentDescription = "Back",
+                    tint = Color.White
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Video Player
+            AndroidView(
+                factory = {
+                    PlayerView(it).apply {
+                        player = exoPlayer
+                        useController = false
+                        layoutParams = FrameLayout.LayoutParams(
+                            FrameLayout.LayoutParams.MATCH_PARENT,
+                            FrameLayout.LayoutParams.WRAP_CONTENT
+                        )
+                        setShutterBackgroundColor(android.graphics.Color.TRANSPARENT)
+
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(300.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .padding(horizontal = 16.dp)
+                    .background(Color.DarkGray)
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Playback Controls
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 32.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = {
+                    val pos = exoPlayer.currentPosition
+                    exoPlayer.seekTo((pos - 10_000).coerceAtLeast(0))
+                }) {
+                    Icon(Icons.Default.Replay10, contentDescription = "Rewind", tint = Color.White)
+                }
+
+                IconButton(onClick = {
+                    if (exoPlayer.isPlaying) exoPlayer.pause()
+                    else exoPlayer.play()
+                }) {
+                    Icon(
+                        if (exoPlayer.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                        contentDescription = "Play/Pause",
+                        tint = Color.White
+                    )
+                }
+
+                IconButton(onClick = {
+                    val pos = exoPlayer.currentPosition
+                    val dur = exoPlayer.duration
+                    exoPlayer.seekTo((pos + 10_000).coerceAtMost(dur))
+                }) {
+                    Icon(Icons.Default.Forward10, contentDescription = "Forward", tint = Color.White)
+                }
+            }
+
+            Spacer(modifier = Modifier.weight(1f))
+
+            // Skip Button
+            Button(
+                onClick = { navController.navigate("main") },
+                colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF3B82F6)),
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier
+                    .padding(16.dp)
+                    .height(50.dp)
+            ) {
+                Text("Skip Tutorial", color = Color.White)
+            }
+
+
+
+        }
+    }
+}
+
+
+
+

@@ -69,7 +69,7 @@ android {
 }
 
 dependencies {
-
+    implementation ("androidx.compose.material3:material3:1.2.0")
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
     implementation(libs.androidx.activity)
@@ -78,7 +78,8 @@ dependencies {
     val camerax_version = "1.5.0-beta01"
     val ktor_version = "3.1.3"
     implementation("io.coil-kt:coil-compose:2.2.2") // หรือเวอร์ชันล่าสุด
-
+    implementation ("androidx.media3:media3-exoplayer:1.3.0")
+    implementation ("androidx.media3:media3-ui:1.3.0")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)

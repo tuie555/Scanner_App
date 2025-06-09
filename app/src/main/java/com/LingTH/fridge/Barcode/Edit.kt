@@ -88,7 +88,7 @@ import androidx.navigation.compose.rememberNavController
 import coil.request.CachePolicy
 import coil.request.ImageRequest
 import com.LingTH.fridge.MainActivity2
-import com.LingTH.fridge.Setting.components.OptionSelector
+import com.LingTH.fridge.sortandfilter.Setting.components.OptionSelector
 import com.LingTH.fridge.ui.theme.getAdaptiveHorizontalPadding
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -788,7 +788,7 @@ fun DeleteProductButton(
         colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Red),
         border = BorderStroke(1.dp, Color.Red)
     ) {
-        Text("ลบสินค้า", fontWeight = FontWeight.Bold)
+        Text("Delete product", fontWeight = FontWeight.Bold)
     }
 }
 

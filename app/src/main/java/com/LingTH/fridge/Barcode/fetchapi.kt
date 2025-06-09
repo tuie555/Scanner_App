@@ -13,7 +13,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-
+import com.LingTH.fridge.Barcode.getProductData
 
 // 1. สร้าง data class ที่จะเก็บข้อมูล
 @Serializable

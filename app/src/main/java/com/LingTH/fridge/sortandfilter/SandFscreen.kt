@@ -26,9 +26,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.LingTH.fridge.MainActivity2
-import com.LingTH.fridge.Setting.components.OptionSelector
-import com.LingTH.fridge.Setting.components.SettingsItem
-import com.LingTH.fridge.Setting.components.SingleOptionSelector
+import com.LingTH.fridge.sortandfilter.Setting.components.OptionSelector
+import com.LingTH.fridge.sortandfilter.Setting.components.SettingsItem
+import com.LingTH.fridge.sortandfilter.Setting.components.SingleOptionSelector
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
