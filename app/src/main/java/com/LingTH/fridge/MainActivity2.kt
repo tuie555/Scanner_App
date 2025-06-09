@@ -124,6 +124,7 @@ import androidx.compose.material.Text
 
 
 import androidx.compose.ui.unit.dp
+import androidx.media3.common.Player
 
 class MainActivity2 : ComponentActivity() {
     private lateinit var requestPermissionLauncher: ActivityResultLauncher<String>
@@ -704,7 +705,6 @@ fun TutorialVideoScreen(
 ) {
     val context = LocalContext.current
 
-    // ExoPlayer setup
     val exoPlayer = remember {
         ExoPlayer.Builder(context).build().apply {
             setMediaItem(MediaItem.fromUri(videoUri))
@@ -713,17 +713,29 @@ fun TutorialVideoScreen(
         }
     }
 
+    // 1️⃣ สร้าง state สำหรับสถานะการเล่น
+    var isPlaying by remember { mutableStateOf(exoPlayer.isPlaying) }
+
+    // 2️⃣ Listener สำหรับอัปเดตสถานะเมื่อ play/pause เปลี่ยน
     DisposableEffect(Unit) {
+        val listener = object : Player.Listener {
+            override fun onIsPlayingChanged(playWhenReady: Boolean) {
+                isPlaying = playWhenReady
+            }
+        }
+        exoPlayer.addListener(listener)
+
         onDispose {
+            exoPlayer.removeListener(listener)
             exoPlayer.release()
         }
     }
 
-    // Main layout
+    // 3️⃣ ใช้ state `isPlaying` ใน UI
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF1F1F1F)) // Soft dark background
+            .background(Color(0xFF1F1F1F))
     ) {
         Column(
             modifier = Modifier
@@ -758,7 +770,6 @@ fun TutorialVideoScreen(
                             FrameLayout.LayoutParams.WRAP_CONTENT
                         )
                         setShutterBackgroundColor(android.graphics.Color.TRANSPARENT)
-
                     }
                 },
                 modifier = Modifier
@@ -786,14 +797,21 @@ fun TutorialVideoScreen(
                     Icon(Icons.Default.Replay10, contentDescription = "Rewind", tint = Color.White)
                 }
 
-                IconButton(onClick = {
-                    if (exoPlayer.isPlaying) exoPlayer.pause()
-                    else exoPlayer.play()
-                }) {
-                    Icon(
-                        if (exoPlayer.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                        contentDescription = "Play/Pause",
-                        tint = Color.White
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    IconButton(onClick = {
+                        if (isPlaying) exoPlayer.pause()
+                        else exoPlayer.play()
+                    }) {
+                        Icon(
+                            if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                            contentDescription = "Play/Pause",
+                            tint = Color.White
+                        )
+                    }
+                    Text(
+                        text = if (isPlaying) "หยุด" else "เล่น",
+                        color = Color.White,
+                        fontSize = 12.sp
                     )
                 }
 
@@ -819,12 +837,10 @@ fun TutorialVideoScreen(
             ) {
                 Text("Skip Tutorial", color = Color.White)
             }
-
-
-
         }
     }
 }
+
 
 
 
