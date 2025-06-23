@@ -54,4 +54,4 @@ Alternatively, you can open an issue with the tag 'enhancement'.
 
 ## License
 
-This project is licensed under the MIT License. See the `LICENSE` file for more details (if available).
+This project is licensed under the MIT License. See the `LICENSE` file for more details.
